@@ -1,0 +1,23 @@
+{
+  "projects": [
+    {
+      "name": "example",
+      "profile_path": "/srv/agent-studio/projects/example/profile.yaml",
+      "has_store": true,
+      "store_path": "/tmp/as-fixture/example.sqlite3",
+      "has_checkpoints": true,
+      "repo_path": null,
+      "is_active": true
+    },
+    {
+      "name": "demo-project",
+      "profile_path": "/srv/agent-studio/projects/demo-project/profile.yaml",
+      "has_store": false,
+      "store_path": "/tmp/as-fixture/demo-project.sqlite3",
+      "has_checkpoints": false,
+      "repo_path": null,
+      "is_active": false
+    }
+  ],
+  "active": "example"
+}

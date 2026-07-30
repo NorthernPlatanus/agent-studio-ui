@@ -1,0 +1,82 @@
+{
+  "completed_tasks": 2,
+  "gate_outcomes": [
+    {
+      "cand_id": "deepseek",
+      "first_attempt": true,
+      "passed": 1,
+      "failed": 2,
+      "pass_rate": 0.3333333333333333
+    },
+    {
+      "cand_id": "deepseek",
+      "first_attempt": false,
+      "passed": 1,
+      "failed": 0,
+      "pass_rate": 1.0
+    },
+    {
+      "cand_id": "kimi",
+      "first_attempt": true,
+      "passed": 1,
+      "failed": 0,
+      "pass_rate": 1.0
+    }
+  ],
+  "event_counts": {
+    "escalated": 1,
+    "auto_integrated": 0,
+    "crashed": 1,
+    "retrieval_exhausted": 0,
+    "visual_gate_error": 0,
+    "visual_gate_skipped": 1,
+    "no_patch": 1,
+    "verify_unverifiable": 1
+  },
+  "subscription_tokens_by_role": [
+    {
+      "role": "planner",
+      "calls": 1,
+      "in_tok": 402000,
+      "out_tok": 8400,
+      "cache_hit": 361000,
+      "in_tok_per_completed_task": 201000.0
+    },
+    {
+      "role": "senior",
+      "calls": 1,
+      "in_tok": 145000,
+      "out_tok": 12600,
+      "cache_hit": 96000,
+      "in_tok_per_completed_task": 72500.0
+    },
+    {
+      "role": "reviewer",
+      "calls": 2,
+      "in_tok": 133000,
+      "out_tok": 4300,
+      "cache_hit": 115000,
+      "in_tok_per_completed_task": 66500.0
+    },
+    {
+      "role": "verifier",
+      "calls": 1,
+      "in_tok": 24000,
+      "out_tok": 900,
+      "cache_hit": 0,
+      "in_tok_per_completed_task": 12000.0
+    }
+  ],
+  "subscription_in_tok_per_completed_task": 352000.0,
+  "cash_usd_per_completed_task": 0.0468,
+  "queue_stats": {
+    "done": 2,
+    "ready": 5,
+    "running": 1,
+    "needs_human": 1,
+    "failed": 1,
+    "rejected": 1,
+    "human_only": 1,
+    "needs_plan": 1
+  }
+}

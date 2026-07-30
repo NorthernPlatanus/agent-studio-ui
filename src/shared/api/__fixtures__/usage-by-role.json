@@ -1,0 +1,98 @@
+{
+  "group_by": "role",
+  "rows": [
+    {
+      "key": "planner",
+      "cash": false,
+      "role": "planner",
+      "provider": null,
+      "model": null,
+      "day": null,
+      "calls": 1,
+      "in_tok": 402000,
+      "out_tok": 8400,
+      "cache_hit": 361000,
+      "cache_miss": 41000,
+      "cost": 0.0,
+      "cache_hit_rate": 0.8980099502487562
+    },
+    {
+      "key": "reviewer",
+      "cash": false,
+      "role": "reviewer",
+      "provider": null,
+      "model": null,
+      "day": null,
+      "calls": 2,
+      "in_tok": 133000,
+      "out_tok": 4300,
+      "cache_hit": 115000,
+      "cache_miss": 18000,
+      "cost": 0.0,
+      "cache_hit_rate": 0.8646616541353384
+    },
+    {
+      "key": "senior",
+      "cash": false,
+      "role": "senior",
+      "provider": null,
+      "model": null,
+      "day": null,
+      "calls": 1,
+      "in_tok": 145000,
+      "out_tok": 12600,
+      "cache_hit": 96000,
+      "cache_miss": 49000,
+      "cost": 0.0,
+      "cache_hit_rate": 0.6620689655172414
+    },
+    {
+      "key": "verifier",
+      "cash": false,
+      "role": "verifier",
+      "provider": null,
+      "model": null,
+      "day": null,
+      "calls": 1,
+      "in_tok": 24000,
+      "out_tok": 900,
+      "cache_hit": 0,
+      "cache_miss": 0,
+      "cost": 0.0,
+      "cache_hit_rate": null
+    },
+    {
+      "key": "worker",
+      "cash": true,
+      "role": "worker",
+      "provider": null,
+      "model": null,
+      "day": null,
+      "calls": 6,
+      "in_tok": 373000,
+      "out_tok": 46500,
+      "cache_hit": 48000,
+      "cache_miss": 325000,
+      "cost": 0.0936,
+      "cache_hit_rate": 0.128686327077748
+    }
+  ],
+  "totals": {
+    "cash": {
+      "calls": 6,
+      "in_tok": 373000,
+      "out_tok": 46500,
+      "cache_hit": 48000,
+      "cache_miss": 325000,
+      "cost": 0.0936
+    },
+    "subscription": {
+      "calls": 5,
+      "in_tok": 704000,
+      "out_tok": 26200,
+      "cache_hit": 572000,
+      "cache_miss": 108000,
+      "cost": 0.0
+    }
+  }
+}

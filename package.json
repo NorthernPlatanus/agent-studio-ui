@@ -15,7 +15,8 @@
     "lint:fix": "biome check --write",
     "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
     "api:types": "openapi-typescript ${VITE_API_BASE:-http://127.0.0.1:8787}/openapi.json -o src/shared/api/generated.ts",
-    "api:check": "npm run api:types && git diff --exit-code -- src/shared/api/generated.ts"
+    "api:check": "openapi-typescript ${VITE_API_BASE:-http://127.0.0.1:8787}/openapi.json -o node_modules/.api-schema-check.ts && git --no-pager diff --no-index --exit-code src/shared/api/generated.ts node_modules/.api-schema-check.ts",
+    "api:fixtures": "python3 scripts/capture-fixtures.py"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.4",

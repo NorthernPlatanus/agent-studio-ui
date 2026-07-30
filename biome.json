@@ -7,7 +7,8 @@
       "!**/dist",
       "!**/coverage",
       "!**/node_modules",
-      "!src/shared/api/generated.ts"
+      "!src/shared/api/generated.ts",
+      "!src/shared/api/__fixtures__/*.json"
     ]
   },
   "formatter": {

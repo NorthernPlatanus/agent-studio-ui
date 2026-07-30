@@ -1,0 +1,83 @@
+{
+  "group_by": "day",
+  "rows": [
+    {
+      "key": "2026-06-21",
+      "cash": false,
+      "role": null,
+      "provider": null,
+      "model": null,
+      "day": "2026-06-21",
+      "calls": 4,
+      "in_tok": 559000,
+      "out_tok": 13600,
+      "cache_hit": 476000,
+      "cache_miss": 59000,
+      "cost": 0.0,
+      "cache_hit_rate": 0.8897196261682243
+    },
+    {
+      "key": "2026-06-21",
+      "cash": true,
+      "role": null,
+      "provider": null,
+      "model": null,
+      "day": "2026-06-21",
+      "calls": 3,
+      "in_tok": 227000,
+      "out_tok": 27400,
+      "cache_hit": 32000,
+      "cache_miss": 195000,
+      "cost": 0.0562,
+      "cache_hit_rate": 0.14096916299559473
+    },
+    {
+      "key": "2026-06-22",
+      "cash": false,
+      "role": null,
+      "provider": null,
+      "model": null,
+      "day": "2026-06-22",
+      "calls": 1,
+      "in_tok": 145000,
+      "out_tok": 12600,
+      "cache_hit": 96000,
+      "cache_miss": 49000,
+      "cost": 0.0,
+      "cache_hit_rate": 0.6620689655172414
+    },
+    {
+      "key": "2026-06-22",
+      "cash": true,
+      "role": null,
+      "provider": null,
+      "model": null,
+      "day": "2026-06-22",
+      "calls": 3,
+      "in_tok": 146000,
+      "out_tok": 19100,
+      "cache_hit": 16000,
+      "cache_miss": 130000,
+      "cost": 0.0374,
+      "cache_hit_rate": 0.1095890410958904
+    }
+  ],
+  "totals": {
+    "cash": {
+      "calls": 6,
+      "in_tok": 373000,
+      "out_tok": 46500,
+      "cache_hit": 48000,
+      "cache_miss": 325000,
+      "cost": 0.0936
+    },
+    "subscription": {
+      "calls": 5,
+      "in_tok": 704000,
+      "out_tok": 26200,
+      "cache_hit": 572000,
+      "cache_miss": 108000,
+      "cost": 0.0
+    }
+  }
+}

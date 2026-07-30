@@ -1,0 +1,119 @@
+{
+  "id": "20260701-101500-aaaaaa",
+  "started_at": 1782036900.0,
+  "status": "done",
+  "note": "nightly queue drain",
+  "cost_usd": 0.0562,
+  "tokens": {
+    "cash": {
+      "calls": 3,
+      "in_tok": 227000,
+      "out_tok": 27400,
+      "cache_hit": 32000,
+      "cache_miss": 195000,
+      "cost": 0.0562
+    },
+    "subscription": {
+      "calls": 4,
+      "in_tok": 559000,
+      "out_tok": 13600,
+      "cache_hit": 476000,
+      "cache_miss": 59000,
+      "cost": 0.0
+    }
+  },
+  "task_ids": [
+    "T-101",
+    "T-102"
+  ],
+  "events": [
+    {
+      "rowid": 1,
+      "ts": 1782036900.0,
+      "run_id": "20260701-101500-aaaaaa",
+      "task_id": null,
+      "kind": "planned",
+      "detail": "13 specs written (1 human-only)"
+    },
+    {
+      "rowid": 2,
+      "ts": 1782036937.0,
+      "run_id": "20260701-101500-aaaaaa",
+      "task_id": "T-101",
+      "kind": "gate",
+      "detail": "deepseek attempt=1 passed=True"
+    },
+    {
+      "rowid": 3,
+      "ts": 1782036974.0,
+      "run_id": "20260701-101500-aaaaaa",
+      "task_id": "T-101",
+      "kind": "review",
+      "detail": "{\"decision\": \"approve\", \"winner\": \"deepseek\", \"notes\": \"clean extraction\"}"
+    },
+    {
+      "rowid": 4,
+      "ts": 1782037011.0,
+      "run_id": "20260701-101500-aaaaaa",
+      "task_id": "T-101",
+      "kind": "merged",
+      "detail": "agents/T-101-deepseek -> agents/feature @ 4f2c1ab9de"
+    },
+    {
+      "rowid": 5,
+      "ts": 1782037048.0,
+      "run_id": "20260701-101500-aaaaaa",
+      "task_id": "T-101",
+      "kind": "finalized",
+      "detail": "done"
+    },
+    {
+      "rowid": 6,
+      "ts": 1782037085.0,
+      "run_id": "20260701-101500-aaaaaa",
+      "task_id": "T-102",
+      "kind": "gate",
+      "detail": "deepseek attempt=1 passed=False failed_step=npm run typecheck\nsrc/widgets/task-table.tsx(42,7): error TS2345: Argument of type 'string' is not assignable to parameter of type 'TaskId'."
+    },
+    {
+      "rowid": 7,
+      "ts": 1782037122.0,
+      "run_id": "20260701-101500-aaaaaa",
+      "task_id": "T-102",
+      "kind": "gate",
+      "detail": "kimi attempt=1 passed=True"
+    },
+    {
+      "rowid": 8,
+      "ts": 1782037159.0,
+      "run_id": "20260701-101500-aaaaaa",
+      "task_id": "T-102",
+      "kind": "visual_gate_skipped",
+      "detail": "kimi enforced=False passed=True failures=[]"
+    },
+    {
+      "rowid": 9,
+      "ts": 1782037196.0,
+      "run_id": "20260701-101500-aaaaaa",
+      "task_id": "T-102",
+      "kind": "review",
+      "detail": "{\"decision\": \"approve\", \"winner\": \"kimi\", \"notes\": \"kimi handled the TaskId branding\"}"
+    },
+    {
+      "rowid": 10,
+      "ts": 1782037233.0,
+      "run_id": "20260701-101500-aaaaaa",
+      "task_id": "T-102",
+      "kind": "merged",
+      "detail": "agents/T-102-kimi -> agents/feature @ 91ab77c0de"
+    },
+    {
+      "rowid": 11,
+      "ts": 1782037270.0,
+      "run_id": "20260701-101500-aaaaaa",
+      "task_id": "T-102",
+      "kind": "finalized",
+      "detail": "done"
+    }
+  ]
+}

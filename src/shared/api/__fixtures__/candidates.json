@@ -1,0 +1,35 @@
+{
+  "task_id": "T-120",
+  "run_id": "20260702-141500-bbbbbb",
+  "source": "checkpoint",
+  "candidates": [
+    {
+      "cand_id": "deepseek",
+      "attempt": 2,
+      "status": "gate_passed",
+      "model": "deepseek-chat",
+      "branch": "agents/T-120-deepseek",
+      "worktree": "/tmp/worktrees/T-120-deepseek",
+      "no_patch": false,
+      "error": null,
+      "gate_log": null,
+      "notes": "reworked the selector memoization",
+      "has_diff": true,
+      "visual_facts": null
+    },
+    {
+      "cand_id": "kimi",
+      "attempt": 2,
+      "status": "llm_failed",
+      "model": "kimi-k2",
+      "branch": "agents/T-120-kimi",
+      "worktree": "/tmp/worktrees/T-120-kimi",
+      "no_patch": true,
+      "error": "provider returned prose, no <file> blocks",
+      "gate_log": null,
+      "notes": null,
+      "has_diff": false,
+      "visual_facts": null
+    }
+  ]
+}
