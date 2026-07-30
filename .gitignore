@@ -1,0 +1,29 @@
+# Internal development docs (plans, decisions, agent notes) — never published.
+DEVDOCS/
+
+node_modules/
+dist/
+dist-ssr/
+build/
+coverage/
+.vite/
+*.local
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+npm-debug.log*
+pnpm-debug.log*
+.eslintcache
+.tsbuildinfo
+*.tsbuildinfo
+playwright-report/
+test-results/
+
+# Operator config and policy, not repo content.
+.claude/
+CLAUDE.md
+
+# Local credential stash — never committed.
+.secrets/
