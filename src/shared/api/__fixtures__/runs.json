@@ -1,0 +1,54 @@
+{
+  "runs": [
+    {
+      "id": "20260702-141500-bbbbbb",
+      "started_at": 1782123300.0,
+      "status": "paused",
+      "note": "limit exhausted: subscription tier hit its 5h cap (resume to continue)",
+      "cost_usd": 0.0374,
+      "tokens": {
+        "cash": {
+          "calls": 3,
+          "in_tok": 146000,
+          "out_tok": 19100,
+          "cache_hit": 16000,
+          "cache_miss": 130000,
+          "cost": 0.0374
+        },
+        "subscription": {
+          "calls": 1,
+          "in_tok": 145000,
+          "out_tok": 12600,
+          "cache_hit": 96000,
+          "cache_miss": 49000,
+          "cost": 0.0
+        }
+      }
+    },
+    {
+      "id": "20260701-101500-aaaaaa",
+      "started_at": 1782036900.0,
+      "status": "done",
+      "note": "nightly queue drain",
+      "cost_usd": 0.0562,
+      "tokens": {
+        "cash": {
+          "calls": 3,
+          "in_tok": 227000,
+          "out_tok": 27400,
+          "cache_hit": 32000,
+          "cache_miss": 195000,
+          "cost": 0.0562
+        },
+        "subscription": {
+          "calls": 4,
+          "in_tok": 559000,
+          "out_tok": 13600,
+          "cache_hit": 476000,
+          "cache_miss": 59000,
+          "cost": 0.0
+        }
+      }
+    }
+  ]
+}

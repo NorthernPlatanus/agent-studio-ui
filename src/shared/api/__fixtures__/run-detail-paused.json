@@ -1,0 +1,104 @@
+{
+  "id": "20260702-141500-bbbbbb",
+  "started_at": 1782123300.0,
+  "status": "paused",
+  "note": "limit exhausted: subscription tier hit its 5h cap (resume to continue)",
+  "cost_usd": 0.0374,
+  "tokens": {
+    "cash": {
+      "calls": 3,
+      "in_tok": 146000,
+      "out_tok": 19100,
+      "cache_hit": 16000,
+      "cache_miss": 130000,
+      "cost": 0.0374
+    },
+    "subscription": {
+      "calls": 1,
+      "in_tok": 145000,
+      "out_tok": 12600,
+      "cache_hit": 96000,
+      "cache_miss": 49000,
+      "cost": 0.0
+    }
+  },
+  "task_ids": [
+    "T-120",
+    "T-121",
+    "T-122"
+  ],
+  "events": [
+    {
+      "rowid": 12,
+      "ts": 1782123707.0,
+      "run_id": "20260702-141500-bbbbbb",
+      "task_id": "T-120",
+      "kind": "gate",
+      "detail": "deepseek attempt=1 passed=False failed_step=npm test\n 2 failing"
+    },
+    {
+      "rowid": 13,
+      "ts": 1782123744.0,
+      "run_id": "20260702-141500-bbbbbb",
+      "task_id": "T-120",
+      "kind": "candidate_failed",
+      "detail": "kimi attempt=1 patch_failed: hunk #2 did not apply to src/widgets/queue-board.tsx"
+    },
+    {
+      "rowid": 14,
+      "ts": 1782123781.0,
+      "run_id": "20260702-141500-bbbbbb",
+      "task_id": "T-120",
+      "kind": "no_patch",
+      "detail": "kimi attempt=2 (no blocks; fix round refunded)"
+    },
+    {
+      "rowid": 15,
+      "ts": 1782123818.0,
+      "run_id": "20260702-141500-bbbbbb",
+      "task_id": "T-120",
+      "kind": "gate",
+      "detail": "deepseek attempt=2 passed=True"
+    },
+    {
+      "rowid": 16,
+      "ts": 1782123855.0,
+      "run_id": "20260702-141500-bbbbbb",
+      "task_id": "T-121",
+      "kind": "escalated",
+      "detail": "attempt=3 after cheap-loop exhaustion"
+    },
+    {
+      "rowid": 17,
+      "ts": 1782123892.0,
+      "run_id": "20260702-141500-bbbbbb",
+      "task_id": "T-121",
+      "kind": "verify_unverifiable",
+      "detail": "senior startup toast is a one-shot state a read-only verifier cannot observe"
+    },
+    {
+      "rowid": 18,
+      "ts": 1782123929.0,
+      "run_id": "20260702-141500-bbbbbb",
+      "task_id": "T-121",
+      "kind": "finalized",
+      "detail": "needs_human"
+    },
+    {
+      "rowid": 19,
+      "ts": 1782123966.0,
+      "run_id": "20260702-141500-bbbbbb",
+      "task_id": "T-122",
+      "kind": "crashed",
+      "detail": "GateError: install step failed: npm ci exited 1 (no package-lock.json)"
+    },
+    {
+      "rowid": 20,
+      "ts": 1782124003.0,
+      "run_id": "20260702-141500-bbbbbb",
+      "task_id": "T-122",
+      "kind": "finalized",
+      "detail": "failed"
+    }
+  ]
+}

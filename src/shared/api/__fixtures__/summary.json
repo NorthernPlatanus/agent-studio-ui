@@ -1,0 +1,99 @@
+{
+  "project": "example",
+  "task_count": 13,
+  "queue_stats": {
+    "done": 2,
+    "ready": 5,
+    "running": 1,
+    "needs_human": 1,
+    "failed": 1,
+    "rejected": 1,
+    "human_only": 1,
+    "needs_plan": 1
+  },
+  "domain_stats": {
+    "frontend": 11,
+    "charts": 1,
+    "seam": 1
+  },
+  "active_run": {
+    "id": "20260702-141500-bbbbbb",
+    "started_at": 1782123300.0,
+    "status": "paused",
+    "note": "limit exhausted: subscription tier hit its 5h cap (resume to continue)",
+    "cost_usd": 0.0374,
+    "tokens": {
+      "cash": {
+        "calls": 3,
+        "in_tok": 146000,
+        "out_tok": 19100,
+        "cache_hit": 16000,
+        "cache_miss": 130000,
+        "cost": 0.0374
+      },
+      "subscription": {
+        "calls": 1,
+        "in_tok": 145000,
+        "out_tok": 12600,
+        "cache_hit": 96000,
+        "cache_miss": 49000,
+        "cost": 0.0
+      }
+    }
+  },
+  "last_run": {
+    "id": "20260702-141500-bbbbbb",
+    "started_at": 1782123300.0,
+    "status": "paused",
+    "note": "limit exhausted: subscription tier hit its 5h cap (resume to continue)",
+    "cost_usd": 0.0374,
+    "tokens": {
+      "cash": {
+        "calls": 3,
+        "in_tok": 146000,
+        "out_tok": 19100,
+        "cache_hit": 16000,
+        "cache_miss": 130000,
+        "cost": 0.0374
+      },
+      "subscription": {
+        "calls": 1,
+        "in_tok": 145000,
+        "out_tok": 12600,
+        "cache_hit": 96000,
+        "cache_miss": 49000,
+        "cost": 0.0
+      }
+    }
+  },
+  "totals": {
+    "cash": {
+      "calls": 6,
+      "in_tok": 373000,
+      "out_tok": 46500,
+      "cache_hit": 48000,
+      "cache_miss": 325000,
+      "cost": 0.0936
+    },
+    "subscription": {
+      "calls": 5,
+      "in_tok": 704000,
+      "out_tok": 26200,
+      "cache_hit": 572000,
+      "cache_miss": 108000,
+      "cost": 0.0
+    }
+  },
+  "cash_spend_usd": 0.0936,
+  "event_counts": {
+    "escalated": 1,
+    "auto_integrated": 0,
+    "crashed": 1,
+    "retrieval_exhausted": 0,
+    "visual_gate_error": 0,
+    "visual_gate_skipped": 1,
+    "no_patch": 1,
+    "verify_unverifiable": 1
+  },
+  "max_event_rowid": 20
+}

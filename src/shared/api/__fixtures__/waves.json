@@ -1,0 +1,115 @@
+{
+  "max_parallel_tasks": 3,
+  "default_n_candidates": 1,
+  "waves": [
+    {
+      "index": 1,
+      "tasks": [
+        {
+          "id": "T-110",
+          "title": "Wire the live stream provider",
+          "domain": "frontend",
+          "n_candidates": 1,
+          "candidates": [
+            "example_model"
+          ],
+          "files_write": [
+            "src/app/live.tsx"
+          ],
+          "files_read": [
+            "src/app.ts"
+          ]
+        },
+        {
+          "id": "T-111",
+          "title": "Chart the token split by channel",
+          "domain": "charts",
+          "n_candidates": 1,
+          "candidates": [
+            "example_model"
+          ],
+          "files_write": [
+            "src/widgets/token-panel.tsx"
+          ],
+          "files_read": [
+            "src/app.ts"
+          ]
+        },
+        {
+          "id": "T-112",
+          "title": "Unify the shared fetch wrapper",
+          "domain": "seam",
+          "n_candidates": 1,
+          "candidates": [
+            "example_model"
+          ],
+          "files_write": [
+            "src/shared/api/client.ts"
+          ],
+          "files_read": [
+            "src/app.ts"
+          ]
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "tasks": [
+        {
+          "id": "T-131a",
+          "title": "Run timeline: event grouping",
+          "domain": "frontend",
+          "n_candidates": 1,
+          "candidates": [
+            "example_model"
+          ],
+          "files_write": [
+            "src/widgets/run-timeline/group.ts"
+          ],
+          "files_read": [
+            "src/app.ts"
+          ]
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "tasks": [
+        {
+          "id": "T-131b",
+          "title": "Run timeline: wave lanes",
+          "domain": "frontend",
+          "n_candidates": 1,
+          "candidates": [
+            "example_model"
+          ],
+          "files_write": [
+            "src/widgets/run-timeline/lanes.tsx"
+          ],
+          "files_read": [
+            "src/app.ts"
+          ]
+        }
+      ]
+    }
+  ],
+  "unreachable": [],
+  "seam_missing_deps": [
+    "T-112"
+  ],
+  "queue_stats": {
+    "done": 2,
+    "ready": 5,
+    "running": 1,
+    "needs_human": 1,
+    "failed": 1,
+    "rejected": 1,
+    "human_only": 1,
+    "needs_plan": 1
+  },
+  "domain_stats": {
+    "frontend": 11,
+    "charts": 1,
+    "seam": 1
+  }
+}

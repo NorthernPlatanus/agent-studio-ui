@@ -1,0 +1,60 @@
+{
+  "id": "T-131",
+  "title": "Rebuild the run timeline",
+  "status": "needs_plan",
+  "milestone": "M1",
+  "retries": 0,
+  "cost_usd": 0.0,
+  "updated_at": 1782126900.0,
+  "domain": "frontend",
+  "risk": "low",
+  "complexity": "s",
+  "visual": false,
+  "agent_able": true,
+  "n_candidates": 1,
+  "parent_id": null,
+  "deps": [],
+  "files_read": [
+    "src/app.ts"
+  ],
+  "files_write": [
+    "src/widgets/run-timeline.tsx"
+  ],
+  "acceptance": [
+    "typecheck passes",
+    "unit tests pass"
+  ],
+  "cash_spend_usd": 0.0,
+  "children": [
+    "T-131a",
+    "T-131b"
+  ],
+  "spec": {
+    "id": "T-131",
+    "title": "Rebuild the run timeline",
+    "milestone": "M1",
+    "deps": [],
+    "files_read": [
+      "src/app.ts"
+    ],
+    "files_write": [
+      "src/widgets/run-timeline.tsx"
+    ],
+    "acceptance": [
+      "typecheck passes",
+      "unit tests pass"
+    ],
+    "domain": "frontend",
+    "risk": "low",
+    "complexity": "s",
+    "visual": false,
+    "agent_able": true,
+    "n_candidates": 1,
+    "parent_id": null,
+    "status": "needs_plan",
+    "retries": 0,
+    "cost_usd": 0.0,
+    "updated_at": 1782126900.0
+  },
+  "events": []
+}

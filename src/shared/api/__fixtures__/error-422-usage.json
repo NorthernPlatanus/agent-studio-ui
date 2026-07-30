@@ -1,0 +1,16 @@
+{
+  "detail": [
+    {
+      "type": "literal_error",
+      "loc": [
+        "query",
+        "group_by"
+      ],
+      "msg": "Input should be 'role', 'model', 'provider' or 'day'",
+      "input": "bogus",
+      "ctx": {
+        "expected": "'role', 'model', 'provider' or 'day'"
+      }
+    }
+  ]
+}
