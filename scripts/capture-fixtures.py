@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import json
 import os
+import socket
 import subprocess
 import sys
 import tempfile
@@ -106,9 +107,26 @@ def fetch(url: str) -> tuple[int, object]:
         return e.code, json.load(e)
 
 
+def port_is_free() -> bool:
+    with socket.socket() as s:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            s.bind(("127.0.0.1", PORT))
+        except OSError:
+            return False
+    return True
+
+
 def main() -> int:
     if not PYTHON.exists():
         print(f"no venv at {PYTHON}; set ORCH_REPO", file=sys.stderr)
+        return 2
+    # A server already on 8789 would answer /healthz, our own uvicorn would fail to
+    # bind unnoticed, and we would capture someone else's state dir — fixtures that
+    # look right and are not. Refuse instead.
+    if not port_is_free():
+        print(f"port {PORT} is already in use — stop that server first; "
+              "capturing from it would record the wrong state dir", file=sys.stderr)
         return 2
     with tempfile.TemporaryDirectory(prefix="as-fixture-") as tmp:
         subprocess.run([str(PYTHON), "-m", "tests.api.fixtures.seed_store", tmp],
