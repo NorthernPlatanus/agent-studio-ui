@@ -1,2 +1,1 @@
-/** Presentational event bits (badges, rows, cells). Filled in from phase 2. */
-export {};
+export { EventKindBadge, EventRow } from "./event-row";

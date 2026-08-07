@@ -1,9 +1,6 @@
 /**
- * Query hooks for `run`. Thin stub until phase 1: the endpoint paths and response
- * shapes live in `DEVDOCS/CONTRACT.md` + `src/shared/api/generated.ts`, neither of
- * which exists yet, and inventing either would create the contract drift the plan
- * is built to avoid. Requests go through `shared/api/client`, keyed by
- * `runKeys`.
+ * Query hooks for `run`. Shapes come from `src/shared/api/generated.ts`,
+ * requests from `shared/api/client`, keys from `runKeys` (project-first).
  */
 
-export { runKeys } from "../model/run-keys";
+export { runQuery, runsQuery, useRun, useRuns } from "./run-queries";

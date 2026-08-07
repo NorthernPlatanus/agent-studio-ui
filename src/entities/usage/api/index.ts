@@ -1,9 +1,6 @@
 /**
- * Query hooks for `usage`. Thin stub until phase 1: the endpoint paths and response
- * shapes live in `DEVDOCS/CONTRACT.md` + `src/shared/api/generated.ts`, neither of
- * which exists yet, and inventing either would create the contract drift the plan
- * is built to avoid. Requests go through `shared/api/client`, keyed by
- * `usageKeys`.
+ * Query hooks for `usage`. Shapes come from `src/shared/api/generated.ts`,
+ * keys from `usageKeys` (project-first).
  */
 
-export { usageKeys } from "../model/usage-keys";
+export { usageQuery, useUsage } from "./usage-queries";

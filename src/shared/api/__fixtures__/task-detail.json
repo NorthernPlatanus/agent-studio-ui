@@ -5,7 +5,7 @@
   "milestone": "M1",
   "retries": 0,
   "cost_usd": 0.0,
-  "updated_at": 1782126900.0,
+  "updated_at": 1783005300.0,
   "domain": "frontend",
   "risk": "low",
   "complexity": "s",
@@ -54,7 +54,7 @@
     "status": "needs_plan",
     "retries": 0,
     "cost_usd": 0.0,
-    "updated_at": 1782126900.0
+    "updated_at": 1783005300.0
   },
   "events": []
 }

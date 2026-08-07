@@ -1,9 +1,7 @@
 /**
- * Query hooks for `candidate`. Thin stub until phase 1: the endpoint paths and response
- * shapes live in `DEVDOCS/CONTRACT.md` + `src/shared/api/generated.ts`, neither of
- * which exists yet, and inventing either would create the contract drift the plan
- * is built to avoid. Requests go through `shared/api/client`, keyed by
- * `candidateKeys`.
+ * Query hooks for `candidate`. Candidates are addressable only through their task
+ * (`…/tasks/{id}/candidates`) — there is no per-candidate endpoint. Shapes come
+ * from `src/shared/api/generated.ts`, keys from `candidateKeys`.
  */
 
-export { candidateKeys } from "../model/candidate-keys";
+export { taskCandidatesQuery, useTaskCandidates } from "./candidate-queries";

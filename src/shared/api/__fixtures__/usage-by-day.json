@@ -2,12 +2,12 @@
   "group_by": "day",
   "rows": [
     {
-      "key": "2026-06-21",
+      "key": "2026-07-01",
       "cash": false,
       "role": null,
       "provider": null,
       "model": null,
-      "day": "2026-06-21",
+      "day": "2026-07-01",
       "calls": 4,
       "in_tok": 559000,
       "out_tok": 13600,
@@ -17,12 +17,12 @@
       "cache_hit_rate": 0.8897196261682243
     },
     {
-      "key": "2026-06-21",
+      "key": "2026-07-01",
       "cash": true,
       "role": null,
       "provider": null,
       "model": null,
-      "day": "2026-06-21",
+      "day": "2026-07-01",
       "calls": 3,
       "in_tok": 227000,
       "out_tok": 27400,
@@ -32,12 +32,12 @@
       "cache_hit_rate": 0.14096916299559473
     },
     {
-      "key": "2026-06-22",
+      "key": "2026-07-02",
       "cash": false,
       "role": null,
       "provider": null,
       "model": null,
-      "day": "2026-06-22",
+      "day": "2026-07-02",
       "calls": 1,
       "in_tok": 145000,
       "out_tok": 12600,
@@ -47,12 +47,12 @@
       "cache_hit_rate": 0.6620689655172414
     },
     {
-      "key": "2026-06-22",
+      "key": "2026-07-02",
       "cash": true,
       "role": null,
       "provider": null,
       "model": null,
-      "day": "2026-06-22",
+      "day": "2026-07-02",
       "calls": 3,
       "in_tok": 146000,
       "out_tok": 19100,
