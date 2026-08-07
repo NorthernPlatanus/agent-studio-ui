@@ -12,7 +12,7 @@ export interface paths {
             cookie?: never;
         };
         /** Healthz */
-        get: operations["healthz_healthz_get"];
+        get: operations["healthz"];
         put?: never;
         post?: never;
         delete?: never;
@@ -29,7 +29,7 @@ export interface paths {
             cookie?: never;
         };
         /** List Projects */
-        get: operations["list_projects_api_projects_get"];
+        get: operations["list_projects"];
         put?: never;
         post?: never;
         delete?: never;
@@ -46,7 +46,7 @@ export interface paths {
             cookie?: never;
         };
         /** Summary */
-        get: operations["summary_api_projects__project__summary_get"];
+        get: operations["summary"];
         put?: never;
         post?: never;
         delete?: never;
@@ -63,7 +63,7 @@ export interface paths {
             cookie?: never;
         };
         /** Waves */
-        get: operations["waves_api_projects__project__waves_get"];
+        get: operations["waves"];
         put?: never;
         post?: never;
         delete?: never;
@@ -80,7 +80,7 @@ export interface paths {
             cookie?: never;
         };
         /** List Tasks */
-        get: operations["list_tasks_api_projects__project__tasks_get"];
+        get: operations["list_tasks"];
         put?: never;
         post?: never;
         delete?: never;
@@ -97,7 +97,7 @@ export interface paths {
             cookie?: never;
         };
         /** Get Task */
-        get: operations["get_task_api_projects__project__tasks__task_id__get"];
+        get: operations["get_task"];
         put?: never;
         post?: never;
         delete?: never;
@@ -122,7 +122,7 @@ export interface paths {
          *     pruned or which ran before the panel existed. `source` tells the UI which it
          *     got, because only the checkpoint can show an in-flight attempt.
          */
-        get: operations["get_candidates_api_projects__project__tasks__task_id__candidates_get"];
+        get: operations["get_candidates"];
         put?: never;
         post?: never;
         delete?: never;
@@ -139,7 +139,7 @@ export interface paths {
             cookie?: never;
         };
         /** List Runs */
-        get: operations["list_runs_api_projects__project__runs_get"];
+        get: operations["list_runs"];
         put?: never;
         post?: never;
         delete?: never;
@@ -156,7 +156,7 @@ export interface paths {
             cookie?: never;
         };
         /** Get Run */
-        get: operations["get_run_api_projects__project__runs__run_id__get"];
+        get: operations["get_run"];
         put?: never;
         post?: never;
         delete?: never;
@@ -173,7 +173,7 @@ export interface paths {
             cookie?: never;
         };
         /** Usage */
-        get: operations["usage_api_projects__project__usage_get"];
+        get: operations["usage"];
         put?: never;
         post?: never;
         delete?: never;
@@ -190,7 +190,7 @@ export interface paths {
             cookie?: never;
         };
         /** Metrics */
-        get: operations["metrics_api_projects__project__metrics_get"];
+        get: operations["metrics"];
         put?: never;
         post?: never;
         delete?: never;
@@ -207,7 +207,7 @@ export interface paths {
             cookie?: never;
         };
         /** List Events */
-        get: operations["list_events_api_projects__project__events_get"];
+        get: operations["list_events"];
         put?: never;
         post?: never;
         delete?: never;
@@ -224,7 +224,7 @@ export interface paths {
             cookie?: never;
         };
         /** List Jobs */
-        get: operations["list_jobs_api_projects__project__jobs_get"];
+        get: operations["list_jobs"];
         put?: never;
         post?: never;
         delete?: never;
@@ -241,7 +241,7 @@ export interface paths {
             cookie?: never;
         };
         /** Get Job */
-        get: operations["get_job_api_projects__project__jobs__job_id__get"];
+        get: operations["get_job"];
         put?: never;
         post?: never;
         delete?: never;
@@ -258,7 +258,117 @@ export interface paths {
             cookie?: never;
         };
         /** Get Job Log */
-        get: operations["get_job_log_api_projects__project__jobs__job_id__log_get"];
+        get: operations["get_job_log"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{project}/jobs/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Run */
+        post: operations["start_run"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{project}/jobs/plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Plan */
+        post: operations["start_plan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{project}/jobs/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Resume */
+        post: operations["start_resume"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{project}/jobs/import-backlog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Import Backlog */
+        post: operations["start_import_backlog"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{project}/jobs/{job_id}/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stop Job
+         * @description SIGINT → grace → SIGTERM → grace → SIGKILL, then the final record.
+         *
+         *     Async, and awaited rather than backgrounded, because the answer the UI needs
+         *     is what the job actually did — a 202 "stopping" would leave the console
+         *     guessing. Stopping an already-finished job is a no-op returning its record,
+         *     not an error: the poll that raced the exit is the common case.
+         */
+        post: operations["stop_job"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{project}/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stream */
+        get: operations["stream"];
         put?: never;
         post?: never;
         delete?: never;
@@ -271,6 +381,17 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * ApiError
+         * @description FastAPI's `HTTPException` envelope: a single human-readable string.
+         */
+        ApiError: {
+            /**
+             * Detail
+             * @description human-readable reason; safe to show verbatim
+             */
+            detail: string;
+        };
         /** Candidate */
         Candidate: {
             /** Cand Id */
@@ -367,8 +488,14 @@ export interface components {
             /** Events */
             events: components["schemas"]["Event"][];
             /**
+             * Order
+             * @description asc = oldest-first (page forward from a cursor); desc = newest-first (the dashboard's recent-events tail)
+             * @enum {string}
+             */
+            order: "asc" | "desc";
+            /**
              * Next Since Rowid
-             * @description pass back as ?since_rowid= to continue; unchanged when the page was empty
+             * @description pass back as ?since_rowid= to continue; unchanged when the page was empty. Always the HIGHEST rowid in the page, both orders
              */
             next_since_rowid: number;
             /**
@@ -405,6 +532,14 @@ export interface components {
             /** Version */
             version: string;
         };
+        /**
+         * ImportBacklogRequest
+         * @description `import-backlog`. Registers stubs from markdown — no LLM, no confirmation.
+         *
+         *     An empty body is the whole point: this is the one job that costs nothing, so
+         *     the UI can offer it as a plain button.
+         */
+        ImportBacklogRequest: Record<string, never>;
         /** Job */
         Job: {
             /** Job Id */
@@ -435,6 +570,28 @@ export interface components {
             exit_code?: number | null;
             /** Log Path */
             log_path?: string | null;
+        };
+        /**
+         * JobAccepted
+         * @description 202 body for every spawn. `run_id` is null until the child mints it.
+         */
+        JobAccepted: {
+            /** Job Id */
+            job_id: string;
+            /** Project */
+            project: string;
+            /**
+             * Command
+             * @enum {string}
+             */
+            command: "run" | "plan" | "resume" | "import-backlog";
+            /**
+             * Argv
+             * @description the exact command line spawned — the panel shows it so a human can reproduce the job in a terminal
+             */
+            argv: string[];
+            /** Run Id */
+            run_id?: string | null;
         };
         /** JobLog */
         JobLog: {
@@ -481,6 +638,34 @@ export interface components {
                 [key: string]: number;
             };
         };
+        /**
+         * PlanRequest
+         * @description `plan`. Spends planner tokens, so it is confirm-gated too.
+         */
+        PlanRequest: {
+            /**
+             * Confirm
+             * @description required — planning spends tokens
+             * @default false
+             */
+            confirm: boolean;
+            /** Tasks */
+            tasks?: string[] | null;
+            /**
+             * All Needs Plan
+             * @description `--all-needs-plan`: plan every needs_plan task
+             * @default false
+             */
+            all_needs_plan: boolean;
+            /** Limit */
+            limit?: number | null;
+            /**
+             * Note
+             * @description free-text steer, passed as the positional argument
+             * @default
+             */
+            note: string;
+        };
         /** Project */
         Project: {
             /** Name */
@@ -498,9 +683,24 @@ export interface components {
             has_checkpoints: boolean;
             /**
              * Repo Path
-             * @description null when the profile has no project.repo_path — such a project is readable but cannot run jobs
+             * @description the EFFECTIVE value after the config merge; null when it is set nowhere — such a project is readable but cannot run jobs
              */
             repo_path?: string | null;
+            /**
+             * Repo Path Source
+             * @description which layer supplied repo_path: this project's own 'profile', the machine-global config/local.yaml ('global'), or 'env'. null when unset
+             */
+            repo_path_source?: ("profile" | "global" | "env") | null;
+            /**
+             * Runnable
+             * @description a checkout resolves, so job endpoints that need one will not 409. Read together with repo_path_source: 'global' means the checkout is not this project's own
+             */
+            runnable: boolean;
+            /**
+             * Runnable Detail
+             * @description why it cannot run, or the caveat when repo_path was inherited rather than declared; null when the project's own profile names its checkout
+             */
+            runnable_detail?: string | null;
             /**
              * Is Active
              * @description matches ORCH_PROJECT
@@ -516,6 +716,18 @@ export interface components {
              * @description ORCH_PROJECT, if set and allowlisted
              */
             active?: string | null;
+        };
+        /**
+         * ResumeRequest
+         * @description `resume`. Continues the paused run, so it spends whatever remains.
+         */
+        ResumeRequest: {
+            /**
+             * Confirm
+             * @description required — resuming continues spending
+             * @default false
+             */
+            confirm: boolean;
         };
         /** RoleTokens */
         RoleTokens: {
@@ -570,10 +782,113 @@ export interface components {
             cost_usd: number;
             tokens: components["schemas"]["TokenChannels"];
         };
+        /**
+         * RunRequest
+         * @description `run`. The only endpoint in the API that can spend subscription quota.
+         */
+        RunRequest: {
+            /**
+             * Confirm
+             * @description required for a real run — it spends quota and writes to git worktrees. Not required when dry_run is true
+             * @default false
+             */
+            confirm: boolean;
+            /**
+             * Dry Run
+             * @description `--dry-run`: the runner prints the schedule and exits. Zero tokens, zero git, so no confirmation is asked for
+             * @default false
+             */
+            dry_run: boolean;
+            /**
+             * Tasks
+             * @description explicit task ids; null lets the scheduler pick
+             */
+            tasks?: string[] | null;
+            /**
+             * N
+             * @description `--n`: cap on tasks dispatched this run
+             */
+            n?: number | null;
+        };
         /** Runs */
         Runs: {
             /** Runs */
             runs: components["schemas"]["RunListItem"][];
+        };
+        /**
+         * StreamCursor
+         * @description `event: tasks|runs|usage|jobs` — a signal, not data. Refetch the entity.
+         *
+         *     The cursor is an opaque digest: compare it for equality, never parse it.
+         */
+        StreamCursor: {
+            /** Cursor */
+            cursor: string;
+        };
+        /**
+         * StreamEvents
+         * @description `event: events` — the one frame carrying rows, because the log is append-only.
+         */
+        StreamEvents: {
+            /** Events */
+            events: components["schemas"]["Event"][];
+            /** Next Since Rowid */
+            next_since_rowid: number;
+            /**
+             * Truncated
+             * @description the burst hit the server's per-frame cap; refetch from next_since_rowid rather than trusting this frame to be complete
+             */
+            truncated: boolean;
+        };
+        /**
+         * StreamFrame
+         * @description Documentation-only envelope: which payload arrives with which event name.
+         *
+         *     SSE carries the name in the frame's `event:` line, not inside `data`, so this
+         *     cannot be a discriminated union — the client switches on the event name and
+         *     then reads `data` as the matching member.
+         */
+        StreamFrame: {
+            /** Data */
+            data: components["schemas"]["StreamHello"] | components["schemas"]["StreamEvents"] | components["schemas"]["StreamHeartbeat"] | components["schemas"]["StreamCursor"];
+        };
+        /**
+         * StreamHeartbeat
+         * @description `event: heartbeat` — only sent when a tick produced nothing else.
+         */
+        StreamHeartbeat: {
+            /** Event Rowid */
+            event_rowid: number;
+        };
+        /**
+         * StreamHello
+         * @description `event: hello` — the first frame, and the thing that makes reconnects cheap.
+         *
+         *     A client adopts `event_rowid`, refetches once, and receives only deltas after
+         *     that; without it a reconnect either replays the log or silently drops the
+         *     rows written while it was away.
+         */
+        StreamHello: {
+            /** Tasks */
+            tasks: string;
+            /** Runs */
+            runs: string;
+            /** Usage */
+            usage: string;
+            /** Events */
+            events: string;
+            /** Jobs */
+            jobs: string;
+            /**
+             * Event Rowid
+             * @description the client is caught up to this rowid
+             */
+            event_rowid: number;
+            /**
+             * Poll Interval S
+             * @description server's tick, for staleness UI
+             */
+            poll_interval_s: number;
         };
         /** Summary */
         Summary: {
@@ -861,7 +1176,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    healthz_healthz_get: {
+    healthz: {
         parameters: {
             query?: never;
             header?: never;
@@ -881,7 +1196,7 @@ export interface operations {
             };
         };
     };
-    list_projects_api_projects_get: {
+    list_projects: {
         parameters: {
             query?: never;
             header?: never;
@@ -901,7 +1216,7 @@ export interface operations {
             };
         };
     };
-    summary_api_projects__project__summary_get: {
+    summary: {
         parameters: {
             query?: never;
             header?: never;
@@ -921,6 +1236,24 @@ export interface operations {
                     "application/json": components["schemas"]["Summary"];
                 };
             };
+            /** @description project is not in the allowlist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description the project is real but has no state/<project>.sqlite3 yet */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -932,7 +1265,7 @@ export interface operations {
             };
         };
     };
-    waves_api_projects__project__waves_get: {
+    waves: {
         parameters: {
             query?: never;
             header?: never;
@@ -952,6 +1285,24 @@ export interface operations {
                     "application/json": components["schemas"]["Waves"];
                 };
             };
+            /** @description project is not in the allowlist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description the project is real but has no state/<project>.sqlite3 yet */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -963,7 +1314,7 @@ export interface operations {
             };
         };
     };
-    list_tasks_api_projects__project__tasks_get: {
+    list_tasks: {
         parameters: {
             query?: {
                 status?: string | null;
@@ -990,6 +1341,24 @@ export interface operations {
                     "application/json": components["schemas"]["Tasks"];
                 };
             };
+            /** @description project is not in the allowlist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description the project is real but has no state/<project>.sqlite3 yet */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -1001,7 +1370,7 @@ export interface operations {
             };
         };
     };
-    get_task_api_projects__project__tasks__task_id__get: {
+    get_task: {
         parameters: {
             query?: never;
             header?: never;
@@ -1022,6 +1391,24 @@ export interface operations {
                     "application/json": components["schemas"]["TaskDetail"];
                 };
             };
+            /** @description unknown project, or no such row in this project */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description the project is real but has no state/<project>.sqlite3 yet */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -1033,7 +1420,7 @@ export interface operations {
             };
         };
     };
-    get_candidates_api_projects__project__tasks__task_id__candidates_get: {
+    get_candidates: {
         parameters: {
             query?: {
                 run_id?: string | null;
@@ -1056,6 +1443,24 @@ export interface operations {
                     "application/json": components["schemas"]["Candidates"];
                 };
             };
+            /** @description unknown project, or no such row in this project */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description the project is real but has no state/<project>.sqlite3 yet */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -1067,7 +1472,7 @@ export interface operations {
             };
         };
     };
-    list_runs_api_projects__project__runs_get: {
+    list_runs: {
         parameters: {
             query?: {
                 limit?: number;
@@ -1089,6 +1494,24 @@ export interface operations {
                     "application/json": components["schemas"]["Runs"];
                 };
             };
+            /** @description project is not in the allowlist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description the project is real but has no state/<project>.sqlite3 yet */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -1100,7 +1523,7 @@ export interface operations {
             };
         };
     };
-    get_run_api_projects__project__runs__run_id__get: {
+    get_run: {
         parameters: {
             query?: {
                 event_limit?: number;
@@ -1123,6 +1546,24 @@ export interface operations {
                     "application/json": components["schemas"]["RunDetail"];
                 };
             };
+            /** @description unknown project, or no such row in this project */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description the project is real but has no state/<project>.sqlite3 yet */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -1134,7 +1575,7 @@ export interface operations {
             };
         };
     };
-    usage_api_projects__project__usage_get: {
+    usage: {
         parameters: {
             query?: {
                 group_by?: "role" | "model" | "provider" | "day";
@@ -1156,6 +1597,24 @@ export interface operations {
                     "application/json": components["schemas"]["Usage"];
                 };
             };
+            /** @description project is not in the allowlist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description the project is real but has no state/<project>.sqlite3 yet */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -1167,7 +1626,7 @@ export interface operations {
             };
         };
     };
-    metrics_api_projects__project__metrics_get: {
+    metrics: {
         parameters: {
             query?: never;
             header?: never;
@@ -1187,6 +1646,24 @@ export interface operations {
                     "application/json": components["schemas"]["Metrics"];
                 };
             };
+            /** @description project is not in the allowlist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description the project is real but has no state/<project>.sqlite3 yet */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -1198,7 +1675,7 @@ export interface operations {
             };
         };
     };
-    list_events_api_projects__project__events_get: {
+    list_events: {
         parameters: {
             query?: {
                 since_rowid?: number | null;
@@ -1206,6 +1683,8 @@ export interface operations {
                 task_id?: string | null;
                 run_id?: string | null;
                 limit?: number;
+                /** @description asc pages forward from since_rowid; desc returns the newest matching rows */
+                order?: "asc" | "desc";
             };
             header?: never;
             path: {
@@ -1224,6 +1703,24 @@ export interface operations {
                     "application/json": components["schemas"]["Events"];
                 };
             };
+            /** @description project is not in the allowlist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description the project is real but has no state/<project>.sqlite3 yet */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -1235,7 +1732,7 @@ export interface operations {
             };
         };
     };
-    list_jobs_api_projects__project__jobs_get: {
+    list_jobs: {
         parameters: {
             query?: never;
             header?: never;
@@ -1255,6 +1752,15 @@ export interface operations {
                     "application/json": components["schemas"]["Jobs"];
                 };
             };
+            /** @description project is not in the allowlist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -1266,7 +1772,7 @@ export interface operations {
             };
         };
     };
-    get_job_api_projects__project__jobs__job_id__get: {
+    get_job: {
         parameters: {
             query?: never;
             header?: never;
@@ -1287,12 +1793,14 @@ export interface operations {
                     "application/json": components["schemas"]["Job"];
                 };
             };
-            /** @description Not Found */
+            /** @description unknown project, or unknown job id */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
             };
             /** @description Validation Error */
             422: {
@@ -1305,10 +1813,11 @@ export interface operations {
             };
         };
     };
-    get_job_log_api_projects__project__jobs__job_id__log_get: {
+    get_job_log: {
         parameters: {
             query?: {
                 offset?: number;
+                max_bytes?: number;
             };
             header?: never;
             path: {
@@ -1328,12 +1837,308 @@ export interface operations {
                     "application/json": components["schemas"]["JobLog"];
                 };
             };
-            /** @description Not Found */
+            /** @description unknown project, or unknown job id */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_run: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAccepted"];
+                };
+            };
+            /** @description unknown project (and, for resume, no paused run to continue) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description a job is already in flight for this project, the profile has no project.repo_path, or the store does not exist yet */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_plan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAccepted"];
+                };
+            };
+            /** @description unknown project (and, for resume, no paused run to continue) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description a job is already in flight for this project, the profile has no project.repo_path, or the store does not exist yet */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_resume: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResumeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAccepted"];
+                };
+            };
+            /** @description unknown project (and, for resume, no paused run to continue) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description a job is already in flight for this project, the profile has no project.repo_path, or the store does not exist yet */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_import_backlog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ImportBacklogRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAccepted"];
+                };
+            };
+            /** @description unknown project (and, for resume, no paused run to continue) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description a job is already in flight for this project, the profile has no project.repo_path, or the store does not exist yet */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stop_job: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+                project: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Job"];
+                };
+            };
+            /** @description unknown project, or unknown job id */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stream: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description SSE. Named events: hello, tasks, runs, usage, events, jobs, heartbeat. Every one but `events` carries only a cursor — refetch the entity through its normal GET. The declared model is one frame's `data`; the frame name arrives in the SSE `event:` line. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StreamFrame"];
+                    "text/event-stream": unknown;
+                };
+            };
+            /** @description project is not in the allowlist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
             };
             /** @description Validation Error */
             422: {

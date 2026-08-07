@@ -18,6 +18,31 @@ if (typeof window !== "undefined" && typeof window.matchMedia !== "function") {
     }) as unknown as MediaQueryList;
 }
 
+// jsdom ships no `EventSource` either, and the shell opens the live stream on
+// mount. The stub connects to nothing: SSE behaviour is tested against
+// `openStream` directly, not through the layout.
+if (typeof globalThis.EventSource !== "function") {
+  class StubEventSource {
+    static readonly CONNECTING = 0;
+    static readonly OPEN = 1;
+    static readonly CLOSED = 2;
+    readonly url: string;
+    readyState = StubEventSource.CONNECTING;
+    constructor(url: string) {
+      this.url = url;
+    }
+    addEventListener() {}
+    removeEventListener() {}
+    dispatchEvent() {
+      return false;
+    }
+    close() {
+      this.readyState = StubEventSource.CLOSED;
+    }
+  }
+  globalThis.EventSource = StubEventSource as unknown as typeof EventSource;
+}
+
 // An unhandled request means the test is hitting a real network — always a bug here.
 beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
 

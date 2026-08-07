@@ -2,7 +2,7 @@
   "runs": [
     {
       "id": "20260702-141500-bbbbbb",
-      "started_at": 1782123300.0,
+      "started_at": 1783001700.0,
       "status": "paused",
       "note": "limit exhausted: subscription tier hit its 5h cap (resume to continue)",
       "cost_usd": 0.0374,
@@ -27,7 +27,7 @@
     },
     {
       "id": "20260701-101500-aaaaaa",
-      "started_at": 1782036900.0,
+      "started_at": 1782900900.0,
       "status": "done",
       "note": "nightly queue drain",
       "cost_usd": 0.0562,

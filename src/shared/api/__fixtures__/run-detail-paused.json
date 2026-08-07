@@ -1,6 +1,6 @@
 {
   "id": "20260702-141500-bbbbbb",
-  "started_at": 1782123300.0,
+  "started_at": 1783001700.0,
   "status": "paused",
   "note": "limit exhausted: subscription tier hit its 5h cap (resume to continue)",
   "cost_usd": 0.0374,
@@ -30,7 +30,7 @@
   "events": [
     {
       "rowid": 12,
-      "ts": 1782123707.0,
+      "ts": 1783002107.0,
       "run_id": "20260702-141500-bbbbbb",
       "task_id": "T-120",
       "kind": "gate",
@@ -38,7 +38,7 @@
     },
     {
       "rowid": 13,
-      "ts": 1782123744.0,
+      "ts": 1783002144.0,
       "run_id": "20260702-141500-bbbbbb",
       "task_id": "T-120",
       "kind": "candidate_failed",
@@ -46,7 +46,7 @@
     },
     {
       "rowid": 14,
-      "ts": 1782123781.0,
+      "ts": 1783002181.0,
       "run_id": "20260702-141500-bbbbbb",
       "task_id": "T-120",
       "kind": "no_patch",
@@ -54,7 +54,7 @@
     },
     {
       "rowid": 15,
-      "ts": 1782123818.0,
+      "ts": 1783002218.0,
       "run_id": "20260702-141500-bbbbbb",
       "task_id": "T-120",
       "kind": "gate",
@@ -62,7 +62,7 @@
     },
     {
       "rowid": 16,
-      "ts": 1782123855.0,
+      "ts": 1783002255.0,
       "run_id": "20260702-141500-bbbbbb",
       "task_id": "T-121",
       "kind": "escalated",
@@ -70,7 +70,7 @@
     },
     {
       "rowid": 17,
-      "ts": 1782123892.0,
+      "ts": 1783002292.0,
       "run_id": "20260702-141500-bbbbbb",
       "task_id": "T-121",
       "kind": "verify_unverifiable",
@@ -78,7 +78,7 @@
     },
     {
       "rowid": 18,
-      "ts": 1782123929.0,
+      "ts": 1783002329.0,
       "run_id": "20260702-141500-bbbbbb",
       "task_id": "T-121",
       "kind": "finalized",
@@ -86,7 +86,7 @@
     },
     {
       "rowid": 19,
-      "ts": 1782123966.0,
+      "ts": 1783002366.0,
       "run_id": "20260702-141500-bbbbbb",
       "task_id": "T-122",
       "kind": "crashed",
@@ -94,7 +94,7 @@
     },
     {
       "rowid": 20,
-      "ts": 1782124003.0,
+      "ts": 1783002403.0,
       "run_id": "20260702-141500-bbbbbb",
       "task_id": "T-122",
       "kind": "finalized",

@@ -1,7 +1,32 @@
+import type { components } from "@/shared/api/generated";
+
 export { usageKeys } from "./usage-keys";
 
+export type Usage = components["schemas"]["Usage"];
+export type UsageRow = components["schemas"]["UsageRow"];
+
+export const USAGE_GROUPINGS = ["role", "model", "provider", "day"] as const;
+export type UsageGrouping = (typeof USAGE_GROUPINGS)[number];
+
 /**
- * Server shapes for `usage` come from `src/shared/api/generated.ts`, produced by
- * `studio-contract` in phase 1 from the live OpenAPI schema. Nothing is handwritten
- * here on purpose — re-export the generated types once they exist.
+ * Every `…/usage` row is split by billing channel: one row per (group, `cash`)
+ * pair, each with its own `cache_hit_rate` (CONTRACT §3). Group by `key` **and**
+ * `cash` — a merged row makes the cache rate unattributable, and summing the
+ * costs produces a figure that is part money and part notional quota.
  */
+export interface UsageGroup {
+  key: string;
+  cash: UsageRow | null;
+  subscription: UsageRow | null;
+}
+
+export function groupUsageByKey(rows: readonly UsageRow[]): UsageGroup[] {
+  const groups = new Map<string, UsageGroup>();
+  for (const row of rows) {
+    const group = groups.get(row.key) ?? { key: row.key, cash: null, subscription: null };
+    if (row.cash) group.cash = row;
+    else group.subscription = row;
+    groups.set(row.key, group);
+  }
+  return [...groups.values()];
+}

@@ -1,9 +1,7 @@
 /**
- * Query hooks for `job`. Thin stub until phase 1: the endpoint paths and response
- * shapes live in `DEVDOCS/CONTRACT.md` + `src/shared/api/generated.ts`, neither of
- * which exists yet, and inventing either would create the contract drift the plan
- * is built to avoid. Requests go through `shared/api/client`, keyed by
- * `jobKeys`.
+ * Query hooks for `job` — the supervised `run` / `plan` / `resume` /
+ * `import-backlog` subprocesses. Shapes come from `src/shared/api/generated.ts`,
+ * keys from `jobKeys` (project-first).
  */
 
-export { jobKeys } from "../model/job-keys";
+export { jobLogQuery, jobQuery, jobsQuery, useJob, useJobs } from "./job-queries";

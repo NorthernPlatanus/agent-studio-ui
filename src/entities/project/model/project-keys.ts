@@ -1,13 +1,20 @@
 import type { QueryKey } from "@tanstack/react-query";
 
 /**
- * TanStack Query key factory for `project`. The project is always the first segment
- * after the entity name so switching projects can never show another project's
- * cached data (PLAN §4.2).
+ * Query keys for `project`.
+ *
+ * Unlike every other entity this one's *list* has no project-first segment:
+ * `GET /api/projects` is the discovery endpoint and is not project-scoped, so
+ * there is nothing to scope by. The project-scoped aggregates that live in this
+ * slice (`…/summary`, `…/metrics`, `…/waves`) do carry the project as their first
+ * segment, per PLAN §4.2.
  */
 export const projectKeys = {
-  all: (project: string): QueryKey => ["project", project],
-  list: (project: string, filters?: unknown): QueryKey =>
-    filters === undefined ? ["project", project, "list"] : ["project", project, "list", filters],
-  detail: (project: string, id: string): QueryKey => ["project", project, "detail", id],
+  all: (): QueryKey => ["project"],
+  list: (): QueryKey => ["project", "list"],
+  /** Everything scoped to one project — the SSE invalidation target in phase 3. */
+  scoped: (project: string): QueryKey => ["project", project],
+  summary: (project: string): QueryKey => ["project", project, "summary"],
+  metrics: (project: string): QueryKey => ["project", project, "metrics"],
+  waves: (project: string): QueryKey => ["project", project, "waves"],
 } as const;

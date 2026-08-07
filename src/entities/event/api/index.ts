@@ -1,9 +1,6 @@
 /**
- * Query hooks for `event`. Thin stub until phase 1: the endpoint paths and response
- * shapes live in `DEVDOCS/CONTRACT.md` + `src/shared/api/generated.ts`, neither of
- * which exists yet, and inventing either would create the contract drift the plan
- * is built to avoid. Requests go through `shared/api/client`, keyed by
- * `eventKeys`.
+ * Query hooks for `event`. Shapes come from `src/shared/api/generated.ts`,
+ * requests from `shared/api/client`, keys from `eventKeys` (project-first).
  */
 
-export { eventKeys } from "../model/event-keys";
+export { type EventQueryParams, eventsQuery, useEvents, useEventTail } from "./event-queries";

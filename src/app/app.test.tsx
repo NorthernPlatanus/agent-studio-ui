@@ -13,32 +13,50 @@ function renderApp(path = "/") {
   );
 }
 
+/**
+ * These assert the *chrome*, not page headings — screens deliberately have no
+ * `<h1>` (`DEVDOCS/DESIGN.md` §3.3). Where you are is stated once, by the top
+ * bar's location chip, so that is what a navigation test must read.
+ */
 describe("app shell", () => {
-  it("renders the dashboard at the index route", async () => {
+  it("names the current screen in the top bar rather than in a page heading", async () => {
     renderApp("/");
-    expect(await screen.findByRole("heading", { level: 1, name: "Dashboard" })).toBeInTheDocument();
+    const crumb = await screen.findByRole("navigation", { name: "Breadcrumb" });
+    expect(within(crumb).getByText("Dashboard")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 1 })).not.toBeInTheDocument();
   });
 
   it("exposes the six top-level destinations in the main nav", async () => {
     renderApp("/");
     const nav = await screen.findByRole("navigation", { name: "Main" });
-    const labels = ["Dashboard", "Tasks", "Runs", "Planner", "Stats", "Settings"];
-    for (const label of labels) {
-      expect(screen.getAllByRole("link", { name: label }).length).toBeGreaterThan(0);
+    for (const label of ["Dashboard", "Tasks", "Runs", "Planner", "Stats"]) {
+      expect(within(nav).getAllByRole("link", { name: label }).length).toBeGreaterThan(0);
     }
-    expect(nav).toBeInTheDocument();
+    // Settings lives in the rail's preferences block, outside the <nav>.
+    expect(screen.getAllByRole("link", { name: "Settings" }).length).toBeGreaterThan(0);
   });
 
-  it("navigates to a placeholder page", async () => {
+  it("groups the nav and hangs queue counts off the pipeline children", async () => {
     renderApp("/");
     const nav = await screen.findByRole("navigation", { name: "Main" });
-    const link = within(nav).getByRole("link", { name: "Stats" });
-    await userEvent.click(link);
-    expect(await screen.findByRole("heading", { level: 1, name: "Stats" })).toBeInTheDocument();
+    for (const caption of ["Overview", "Pipeline", "Analysis"]) {
+      expect(within(nav).getByRole("heading", { name: caption })).toBeInTheDocument();
+    }
+    // Pre-filtered views, per DESIGN §3.2 — the four statuses an operator chases.
+    const ready = within(nav).getByRole("link", { name: /Ready/ });
+    expect(ready).toHaveAttribute("href", "/tasks?status=ready");
   });
 
-  it("renders the not-found page for an unknown route", async () => {
+  it("navigates through the rail and updates the location chip", async () => {
+    renderApp("/");
+    const nav = await screen.findByRole("navigation", { name: "Main" });
+    await userEvent.click(within(nav).getByRole("link", { name: "Stats" }));
+    const crumb = await screen.findByRole("navigation", { name: "Breadcrumb" });
+    expect(within(crumb).getByText("Stats")).toBeInTheDocument();
+  });
+
+  it("renders the not-found state for an unknown route", async () => {
     renderApp("/nope");
-    expect(await screen.findByRole("heading", { level: 1, name: "Not found" })).toBeInTheDocument();
+    expect(await screen.findByText(/does not exist in the panel/)).toBeInTheDocument();
   });
 });

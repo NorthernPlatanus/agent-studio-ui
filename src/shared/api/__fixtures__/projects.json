@@ -7,6 +7,9 @@
       "store_path": "/tmp/as-fixture/example.sqlite3",
       "has_checkpoints": true,
       "repo_path": null,
+      "repo_path_source": null,
+      "runnable": false,
+      "runnable_detail": "project.repo_path is not set anywhere (profile, config/local.yaml, or ORCH_PROJECT_REPO_PATH), so jobs that need a checkout cannot run",
       "is_active": true
     },
     {
@@ -16,6 +19,9 @@
       "store_path": "/tmp/as-fixture/demo-project.sqlite3",
       "has_checkpoints": false,
       "repo_path": null,
+      "repo_path_source": null,
+      "runnable": false,
+      "runnable_detail": "project.repo_path is not set anywhere (profile, config/local.yaml, or ORCH_PROJECT_REPO_PATH), so jobs that need a checkout cannot run",
       "is_active": false
     }
   ],

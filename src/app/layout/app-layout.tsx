@@ -1,97 +1,92 @@
-import {
-  BarChart3Icon,
-  LayoutDashboardIcon,
-  ListChecksIcon,
-  MessagesSquareIcon,
-  PlayCircleIcon,
-  SettingsIcon,
-} from "lucide-react";
-import type { ComponentType } from "react";
-import { NavLink, Outlet } from "react-router";
-import { ThemeToggle } from "@/features/theme-toggle/theme-toggle";
-import { cn } from "@/shared/lib/utils";
+/**
+ * The three-zone shell: navigate · work · context (`DEVDOCS/DESIGN.md` §3.1).
+ *
+ * All three zones sit on the same page background with no dividing hairlines —
+ * what separates them is space and the raised surfaces inside them (§3.3).
+ *
+ * The layout, not the page, resolves the location chip's subject: a detail route
+ * knows its object from the URL, and making every screen push a title into the
+ * chrome would put chrome concerns in seven page components.
+ */
 
-interface NavItem {
-  to: string;
-  label: string;
-  icon: ComponentType<{ className?: string; "aria-hidden"?: boolean | "true" | "false" }>;
+import { useEffect } from "react";
+import { Outlet, useLocation, useParams } from "react-router";
+import { LiveStreamProvider } from "@/app/providers/live-stream-provider";
+import { useTask } from "@/entities/task/api";
+import { useActiveProject } from "@/features/project-switch/use-active-project";
+import { cn } from "@/shared/lib/utils";
+import { useUiStore } from "@/shared/store/ui-store";
+import { ContextRail } from "./context-rail";
+import { routeMeta } from "./nav-config";
+import { NavRail } from "./nav-rail";
+import { TopBar } from "./top-bar";
+
+/** The trailing half of the location chip, resolved from the route. */
+function useSubject(project: string | null): string | null {
+  const { taskId, runId } = useParams();
+  const task = useTask(project, taskId);
+
+  if (taskId !== undefined) {
+    const title = task.data?.title;
+    return title === undefined ? taskId : `${taskId} · ${title}`;
+  }
+  if (runId !== undefined) return runId;
+  return null;
 }
 
-const NAV: NavItem[] = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboardIcon },
-  { to: "/tasks", label: "Tasks", icon: ListChecksIcon },
-  { to: "/runs", label: "Runs", icon: PlayCircleIcon },
-  { to: "/planner", label: "Planner", icon: MessagesSquareIcon },
-  { to: "/stats", label: "Stats", icon: BarChart3Icon },
-  { to: "/settings", label: "Settings", icon: SettingsIcon },
-];
-
 export function AppLayout() {
+  const { pathname } = useLocation();
+  const meta = routeMeta(pathname);
+  const { project } = useActiveProject();
+  const subject = useSubject(project);
+
+  const collapsed = useUiStore((state) => state.layout.sidebarCollapsed);
+  const toggleSidebar = useUiStore((state) => state.toggleSidebar);
+  const railOpen = useUiStore((state) => state.layout.contextRailOpen);
+  const setRailOpen = useUiStore((state) => state.setContextRail);
+  const railTouched = useUiStore((state) => state.layout.contextRailTouched);
+
+  // The route's `rail` is a default, not a rule: once the operator has used the
+  // toggle, their choice follows them across screens.
+  useEffect(() => {
+    if (!railTouched) setRailOpen(meta.rail, { user: false });
+  }, [meta.rail, railTouched, setRailOpen]);
+
   return (
-    <div className="flex min-h-dvh bg-background text-foreground">
-      <a
-        href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-foreground"
-      >
-        Skip to content
-      </a>
+    <LiveStreamProvider project={project}>
+      <div className="flex h-dvh overflow-hidden bg-background text-foreground">
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-foreground"
+        >
+          Skip to content
+        </a>
 
-      <aside className="hidden w-56 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground sm:flex">
-        <div className="flex h-14 items-center gap-2 border-b border-sidebar-border px-4">
-          <span className="text-sm font-semibold tracking-tight">agent-studio</span>
-        </div>
-        <nav aria-label="Main" className="flex-1 space-y-1 p-2">
-          {NAV.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === "/"}
-              className={({ isActive }) =>
-                cn(
-                  "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
-                  "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring",
-                  isActive
-                    ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/75",
-                )
-              }
+        <NavRail collapsed={collapsed} project={project} />
+
+        <div className="flex min-w-0 flex-1 flex-col">
+          <TopBar
+            project={project}
+            subject={subject}
+            onToggleNav={toggleSidebar}
+            onToggleRail={() => setRailOpen(!railOpen, { user: true })}
+            railOpen={railOpen}
+          />
+
+          <div className="flex min-h-0 flex-1 gap-3">
+            <main
+              id="main"
+              className={cn(
+                "min-w-0 flex-1 overflow-y-auto px-4 pb-6",
+                meta.width === "reading" && "mx-auto w-full max-w-4xl",
+              )}
             >
-              <Icon className="size-4" aria-hidden="true" />
-              {label}
-            </NavLink>
-          ))}
-        </nav>
-      </aside>
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 items-center justify-between gap-4 border-b border-border px-4">
-          <nav aria-label="Main (compact)" className="flex gap-1 overflow-x-auto sm:hidden">
-            {NAV.map(({ to, label }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={to === "/"}
-                className={({ isActive }) =>
-                  cn(
-                    "whitespace-nowrap rounded-md px-2 py-1 text-xs",
-                    isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground",
-                  )
-                }
-              >
-                {label}
-              </NavLink>
-            ))}
-          </nav>
-          <div className="ml-auto flex items-center gap-2">
-            <ThemeToggle />
+              <Outlet />
+            </main>
+            {railOpen ? <ContextRail project={project} /> : null}
           </div>
-        </header>
-
-        <main id="main" className="min-w-0 flex-1 p-4 sm:p-6">
-          <Outlet />
-        </main>
+        </div>
       </div>
-    </div>
+    </LiveStreamProvider>
   );
 }

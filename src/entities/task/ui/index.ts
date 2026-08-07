@@ -1,2 +1,2 @@
-/** Presentational task bits (badges, rows, cells). Filled in from phase 2. */
-export {};
+export { TaskFlags } from "./task-flags";
+export { TaskStatusBadge } from "./task-status-badge";
