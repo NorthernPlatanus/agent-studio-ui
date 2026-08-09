@@ -47,7 +47,7 @@ export function QueueBoard({ queueStats }: { queueStats: Readonly<Record<string,
         ))}
       </div>
 
-      <ul className="grid grid-cols-2 gap-x-6 gap-y-1.5 sm:grid-cols-3">
+      <ul className="grid grid-cols-2 gap-x-6 gap-y-1.5 @2xl:grid-cols-3">
         {rows.map((row) => (
           <li key={row.status}>
             <Link

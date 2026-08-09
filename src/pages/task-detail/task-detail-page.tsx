@@ -9,13 +9,14 @@ import { Link, useParams } from "react-router";
 import { EventRow, newestFirst } from "@/entities/event";
 import { TaskFlags, TaskStatusBadge } from "@/entities/task";
 import { useTask } from "@/entities/task/api";
-import { useActiveProject } from "@/features/project-switch/use-active-project";
+import { useActiveProject } from "@/features/project-switch";
 import { ApiError } from "@/shared/api/client";
 import { formatInteger, formatTimestamp, formatUsd, textOrDash } from "@/shared/lib/format";
 import { Banner } from "@/shared/ui/banner";
 import { Field, Metric, MetricRow } from "@/shared/ui/metric";
 import { Panel, PanelBody, PanelHeader } from "@/shared/ui/panel";
 import { EmptyState, Region } from "@/shared/ui/region";
+import { Screen } from "@/shared/ui/screen";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { Chip } from "@/shared/ui/status-dot";
 import { CandidateBoard } from "@/widgets/candidate-board";
@@ -53,36 +54,36 @@ export function TaskDetailPage() {
 
   if (error instanceof ApiError && error.status === 404) {
     return (
-      <div className="pt-2">
+      <Screen>
         <Banner tone="bad">
           No task <span className="font-mono">{taskId}</span> in this project.{" "}
           <Link to="/tasks" className="underline underline-offset-2">
             Back to tasks
           </Link>
         </Banner>
-      </div>
+      </Screen>
     );
   }
   if (error) {
     return (
-      <div className="pt-2">
+      <Screen>
         <Banner tone="bad">Could not read this task.</Banner>
-      </div>
+      </Screen>
     );
   }
   if (isPending) {
     return (
-      <div className="space-y-3 pt-2">
+      <Screen>
         <Skeleton className="h-24 w-full" />
         <Skeleton className="h-64 w-full" />
-      </div>
+      </Screen>
     );
   }
 
   const events = newestFirst(data.events ?? []);
 
   return (
-    <div className="space-y-4 pt-1">
+    <Screen>
       {/* The attribute chip row, directly under the location chip that names the
           task — the reference's feature strip (DESIGN §3.6). */}
       <div className="flex flex-wrap items-center gap-1.5">
@@ -161,6 +162,6 @@ export function TaskDetailPage() {
           </Panel>
         )}
       </Region>
-    </div>
+    </Screen>
   );
 }

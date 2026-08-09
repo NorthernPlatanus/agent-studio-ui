@@ -23,7 +23,7 @@ import { StatusDot } from "@/shared/ui/status-dot";
  * Borderless: the top bar nests this inside a shared pill alongside the stream
  * indicator, so the group owns the border and this owns only its content (§3.3).
  */
-const SHELL = "flex h-full items-center gap-2 rounded-lg px-2.5 text-xs transition-colors";
+const SHELL = "flex h-full items-center gap-2 ml-1 rounded-lg px-2.5 text-xs transition-colors";
 
 export function ActiveRunPill({ project }: { project: string | null }) {
   const { data } = useSummary(project);

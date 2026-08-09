@@ -22,7 +22,7 @@ export function TokenPanel({ tokens }: { tokens: TokenChannels | undefined }) {
   }
 
   return (
-    <div className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
+    <div className="grid gap-x-8 gap-y-4 @xl:grid-cols-2">
       {views.map(({ channel, label, totals }) => (
         <section key={channel}>
           <h3 className="mb-1.5 flex items-baseline gap-2">

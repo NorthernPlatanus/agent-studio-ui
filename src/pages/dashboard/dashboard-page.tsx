@@ -10,7 +10,9 @@ import { AlertTriangleIcon } from "lucide-react";
 import { Link } from "react-router";
 import { useSummary } from "@/entities/project/api";
 import { isResumable, RunStatusBadge } from "@/entities/run";
-import { useActiveProject } from "@/features/project-switch/use-active-project";
+import { ImportBacklog } from "@/features/import-backlog";
+import { useActiveProject } from "@/features/project-switch";
+import { ResumeRun } from "@/features/resume-run";
 import { ApiError } from "@/shared/api/client";
 import { useNow } from "@/shared/hooks";
 import { formatDuration, formatInteger, formatTimestamp, formatUsd } from "@/shared/lib/format";
@@ -18,8 +20,8 @@ import { Banner } from "@/shared/ui/banner";
 import { Metric, MetricRow } from "@/shared/ui/metric";
 import { Panel, PanelBody, PanelHeader } from "@/shared/ui/panel";
 import { EmptyState, Region } from "@/shared/ui/region";
+import { Screen } from "@/shared/ui/screen";
 import { Skeleton } from "@/shared/ui/skeleton";
-import { Soon } from "@/shared/ui/soon";
 import { QueueBoard } from "@/widgets/queue-board";
 import { StagePipeline } from "@/widgets/stage-pipeline";
 import { TokenPanel } from "@/widgets/token-panel";
@@ -62,16 +64,14 @@ function ActiveRunPanel({ project }: { project: string | null }) {
             toast that has already gone by the time anyone looks. */}
         {run.note ? (
           <Banner tone={isResumable(run) ? "warn" : "info"}>
-            {run.note}
-            {isResumable(run) ? (
-              <span className="ml-2 inline-flex items-center gap-1.5">
-                <Soon label="Resume soon" title="Resume lands with the job-control feature" />
-              </span>
-            ) : null}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <span className="min-w-0 flex-1">{run.note}</span>
+              {isResumable(run) ? <ResumeRun project={project} /> : null}
+            </div>
           </Banner>
         ) : null}
 
-        <div className="grid grid-cols-2 gap-x-8 gap-y-4 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-4 @2xl:grid-cols-4">
           <Metric
             label="Started"
             value={formatTimestamp(run.started_at)}
@@ -105,42 +105,44 @@ export function DashboardPage() {
   // problem at all.
   if (error instanceof ApiError && error.status === 409) {
     return (
-      <div className="pt-2">
+      <Screen>
         <Banner tone="info">
-          <strong className="font-medium">{project}</strong> has no store yet — it has never run.
-          Import a backlog to create one.{" "}
-          <span className="text-muted-foreground">
-            {typeof error.detail === "string" ? error.detail : null}
-          </span>
+          <div className="space-y-2">
+            <p>
+              <strong className="font-medium">{project}</strong> has no store yet — it has never
+              run. Importing the backlog registers its tasks and creates one.
+            </p>
+            <ImportBacklog project={project} />
+          </div>
         </Banner>
-      </div>
+      </Screen>
     );
   }
 
   if (error) {
     return (
-      <div className="pt-2">
+      <Screen>
         <Banner tone="bad">
           Could not read this project.{" "}
           {error instanceof ApiError && typeof error.detail === "string" ? error.detail : null}
         </Banner>
-      </div>
+      </Screen>
     );
   }
 
   if (isPending) {
     return (
-      <div className="space-y-3 pt-2">
+      <Screen>
         <Skeleton className="h-24 w-full" />
         <Skeleton className="h-64 w-full" />
-      </div>
+      </Screen>
     );
   }
 
   const exceptions = Object.entries(data.event_counts).filter(([, count]) => count > 0);
 
   return (
-    <div className="space-y-4 pt-1">
+    <Screen>
       <MetricRow>
         <Metric label="Tasks" value={formatInteger(data.task_count)} hint={project ?? ""} />
         <Metric
@@ -171,7 +173,7 @@ export function DashboardPage() {
 
       <ActiveRunPanel project={project} />
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid gap-4 @3xl:grid-cols-2">
         <Panel>
           <PanelHeader title="Queue" meta={`${formatInteger(data.task_count)} tasks`} />
           <PanelBody>
@@ -225,6 +227,6 @@ export function DashboardPage() {
       >
         <StagePipeline eventCounts={data.event_counts} />
       </Region>
-    </div>
+    </Screen>
   );
 }

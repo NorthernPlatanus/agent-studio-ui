@@ -13,6 +13,7 @@ import { Banner } from "@/shared/ui/banner";
 import { Button } from "@/shared/ui/button";
 import { Panel, PanelBody, PanelHeader } from "@/shared/ui/panel";
 import { Region } from "@/shared/ui/region";
+import { Screen } from "@/shared/ui/screen";
 import { Soon, SoonOverlay } from "@/shared/ui/soon";
 import { Chip } from "@/shared/ui/status-dot";
 
@@ -29,7 +30,7 @@ function Turn({ who, children }: { who: "planner" | "you"; children: React.React
 
 export function PlannerPage() {
   return (
-    <div className="space-y-4 pt-1">
+    <Screen>
       <Banner tone="info">
         The planner loop runs against your subscription quota. Nothing here spends anything until
         the discuss endpoints land.
@@ -88,6 +89,6 @@ export function PlannerPage() {
           </div>
         </SoonOverlay>
       </Region>
-    </div>
+    </Screen>
   );
 }

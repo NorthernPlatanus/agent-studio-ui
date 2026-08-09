@@ -14,9 +14,13 @@ import { JobConsole } from "@/widgets/job-console";
 
 export function ContextRail({ project }: { project: string | null }) {
   return (
+    // Appears at `xl`, not `lg`: at 1024px the nav rail and a 320px activity
+    // column leave the work area around 440px, which is narrower than the
+    // narrowest table in the app. Better to keep the rail shut until there is
+    // room for both than to ship a squeezed default.
     <aside
       aria-label="Activity"
-      className="hidden w-80 shrink-0 flex-col gap-3 overflow-y-auto pb-4 pr-4 lg:flex"
+      className="hidden w-72 shrink-0 flex-col gap-3 overflow-y-auto pb-6 pr-4 pt-14 xl:flex 2xl:w-80"
     >
       <Panel>
         <PanelHeader title="Jobs" />
