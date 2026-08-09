@@ -22,6 +22,7 @@ import {
 } from "@/entities/candidate";
 import { useTaskCandidates } from "@/entities/candidate/api";
 import { humanize, textOrDash } from "@/shared/lib/format";
+import { Banner } from "@/shared/ui/banner";
 import { Field } from "@/shared/ui/metric";
 import { Panel, PanelBody, PanelHeader } from "@/shared/ui/panel";
 import { EmptyState } from "@/shared/ui/region";
@@ -87,7 +88,7 @@ export function CandidateBoard({
 }) {
   const { data, isPending, error } = useTaskCandidates(project, taskId);
 
-  if (error) return <EmptyState>Could not read candidates for this task.</EmptyState>;
+  if (error) return <Banner tone="bad">Could not read candidates for this task.</Banner>;
   if (isPending) return <Skeleton className="h-32 w-full" />;
   if (data.source === "none" || data.candidates.length === 0) {
     return <EmptyState>{SOURCE_EXPLANATION.none}</EmptyState>;
@@ -99,7 +100,7 @@ export function CandidateBoard({
         <span className="font-medium text-foreground">{SOURCE_LABEL[data.source]}</span>{" "}
         {SOURCE_EXPLANATION[data.source]}
       </p>
-      <div className="grid gap-3 xl:grid-cols-2">
+      <div className="grid gap-3 @4xl:grid-cols-2">
         {data.candidates.map((candidate) => (
           <CandidateCard key={`${candidate.cand_id}-${candidate.attempt}`} candidate={candidate} />
         ))}

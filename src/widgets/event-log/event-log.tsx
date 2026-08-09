@@ -7,6 +7,7 @@
 
 import { EventRow, newestFirst } from "@/entities/event";
 import { useEventTail } from "@/entities/event/api";
+import { Banner } from "@/shared/ui/banner";
 import { EmptyState } from "@/shared/ui/region";
 import { Skeleton } from "@/shared/ui/skeleton";
 
@@ -21,7 +22,12 @@ export function EventLog({
 }) {
   const { data, isPending, error } = useEventTail(project, count);
 
-  if (error) return <EmptyState>Could not read the event log.</EmptyState>;
+  if (error)
+    return (
+      <Banner tone="bad" className="m-3">
+        Could not read the event log.
+      </Banner>
+    );
   if (isPending) {
     return (
       <div className="space-y-2 p-3">

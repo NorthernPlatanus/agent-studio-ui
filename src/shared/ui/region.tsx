@@ -63,7 +63,7 @@ export function EmptyState({ children, className }: { children: ReactNode; class
   return (
     <p
       className={cn(
-        "rounded-md border border-dashed border-border px-4 py-6 text-center text-[13px] text-muted-foreground",
+        "rounded-md border border-dashed border-border px-4 py-6 m-1.5 text-center text-[13px] text-muted-foreground",
         className,
       )}
     >

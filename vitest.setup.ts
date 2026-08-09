@@ -43,6 +43,18 @@ if (typeof globalThis.EventSource !== "function") {
   globalThis.EventSource = StubEventSource as unknown as typeof EventSource;
 }
 
+// jsdom has no `ResizeObserver`, which `useElementWidth` needs — the data table
+// chooses its columns from a measured width. The stub never fires, so tables
+// render every column in tests, which is the right default to assert against.
+if (typeof globalThis.ResizeObserver !== "function") {
+  class StubResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+  globalThis.ResizeObserver = StubResizeObserver as unknown as typeof ResizeObserver;
+}
+
 // An unhandled request means the test is hitting a real network — always a bug here.
 beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
 

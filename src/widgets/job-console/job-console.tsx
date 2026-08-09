@@ -11,8 +11,10 @@
 import { Link } from "react-router";
 import { isJobLive, type Job, jobOutcome, jobTone } from "@/entities/job";
 import { useJobs } from "@/entities/job/api";
+import { StopJob } from "@/features/stop-job";
 import { useNow } from "@/shared/hooks";
 import { formatDuration, humanize } from "@/shared/lib/format";
+import { Banner } from "@/shared/ui/banner";
 import { EmptyState } from "@/shared/ui/region";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { StatusDot } from "@/shared/ui/status-dot";
@@ -30,20 +32,22 @@ function JobRow({ job, now }: { job: Job; now: number }) {
           {humanize(job.status)} · {jobOutcome(job)}
         </span>
       </span>
-      <span className="shrink-0 text-right">
-        <span className="block text-[11px] tabular-nums text-muted-foreground">
-          {formatDuration(elapsed)}
+      <span className="flex shrink-0 items-center gap-1.5">
+        <span className="text-right">
+          <span className="block text-[11px] tabular-nums text-muted-foreground">
+            {formatDuration(elapsed)}
+          </span>
+          {job.run_id ? (
+            <Link
+              to={`/runs/${encodeURIComponent(job.run_id)}`}
+              className="block text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+            >
+              run
+            </Link>
+          ) : null}
         </span>
-        {job.run_id ? (
-          <Link
-            to={`/runs/${encodeURIComponent(job.run_id)}`}
-            className="block text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-          >
-            run
-          </Link>
-        ) : null}
+        {live ? <StopJob project={job.project} jobId={job.job_id} /> : null}
       </span>
-      {live ? <span className="sr-only">running</span> : null}
     </li>
   );
 }
@@ -54,7 +58,12 @@ export function JobConsole({ project, limit }: { project: string | null; limit?:
   const anyLive = jobs.some(isJobLive);
   const now = useNow(anyLive);
 
-  if (error) return <EmptyState>Could not read the job list.</EmptyState>;
+  if (error)
+    return (
+      <Banner tone="bad" className="m-3">
+        Could not read the job list.
+      </Banner>
+    );
   if (isPending) return <Skeleton className="m-3 h-12" />;
   if (jobs.length === 0) {
     return <EmptyState>No jobs have been started from the panel.</EmptyState>;

@@ -14,9 +14,10 @@
 
 import { ArrowLeftIcon, ArrowRightIcon, PanelLeftIcon, PanelRightIcon } from "lucide-react";
 import { useLocation, useNavigate } from "react-router";
+import { describeStream } from "@/shared/lib/stream-status";
 import { cn } from "@/shared/lib/utils";
 import { useUiStore } from "@/shared/store/ui-store";
-import { StatusDot, type Tone } from "@/shared/ui/status-dot";
+import { StatusDot } from "@/shared/ui/status-dot";
 import { ActiveRunPill } from "@/widgets/active-run";
 import { routeMeta } from "./nav-config";
 
@@ -26,31 +27,16 @@ const ICON_BUTTON =
 /** The shared shape of every floating group in the bar. */
 const PILL = "flex h-8 items-center rounded-lg border border-border bg-card";
 
-const STREAM_TONE: Record<string, Tone> = {
-  open: "good",
-  connecting: "warn",
-  error: "bad",
-  closed: "neutral",
-  idle: "neutral",
-};
-
-const STREAM_LABEL: Record<string, string> = {
-  open: "Live",
-  connecting: "Connecting",
-  error: "Stream down",
-  closed: "Offline",
-  idle: "Offline",
-};
-
 function StreamIndicator() {
   const status = useUiStore((state) => state.streamStatus);
+  const { tone, label } = describeStream(status);
   return (
     <span
       className="flex items-center gap-1.5 px-2.5 text-xs text-muted-foreground"
-      title={`Live stream: ${STREAM_LABEL[status] ?? status}`}
+      title={`Live stream: ${label}`}
     >
-      <StatusDot tone={STREAM_TONE[status] ?? "neutral"} pulse={status === "connecting"} />
-      {STREAM_LABEL[status] ?? status}
+      <StatusDot tone={tone} pulse={status === "connecting"} />
+      {label}
     </span>
   );
 }
@@ -91,63 +77,87 @@ export function TopBar({
   onToggleNav,
   onToggleRail,
   railOpen,
+  scrolled,
 }: {
   project: string | null;
   subject: string | null;
   onToggleNav: () => void;
   onToggleRail: () => void;
   railOpen: boolean;
+  /** 0 at the top of the page, 1 once scrolled clear — drives the blur fade. */
+  scrolled: number;
 }) {
   const navigate = useNavigate();
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 px-3">
-      <button
-        type="button"
-        onClick={onToggleNav}
-        className={ICON_BUTTON}
-        aria-label="Toggle navigation"
-      >
-        <PanelLeftIcon className="size-4" aria-hidden="true" />
-      </button>
+    <header className="absolute inset-x-0 top-0 z-30 h-14">
+      {/*
+        The bar itself stays invisible; this layer is the blur, and its *opacity*
+        is what animates. `backdrop-filter` cannot be interpolated smoothly, so
+        fading a layer that carries the filter is what makes the transition
+        continuous rather than a snap at some threshold.
+      */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-background/70 backdrop-blur-md"
+        style={{ opacity: scrolled }}
+      />
+      {/* A soft edge rather than a hairline: a 1px rule under a floating bar is
+          exactly the slab this design removed (§3.3). */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-full h-8 bg-gradient-to-b from-background/70 to-transparent"
+        style={{ opacity: scrolled }}
+      />
 
-      <div className={cn(PILL, "hidden gap-px p-0.5 sm:flex")}>
+      <div className="relative flex h-full items-center gap-2 px-3">
         <button
           type="button"
-          onClick={() => void navigate(-1)}
-          className={cn(ICON_BUTTON, "size-6")}
-          aria-label="Back"
+          onClick={onToggleNav}
+          className={ICON_BUTTON}
+          aria-label="Toggle navigation"
         >
-          <ArrowLeftIcon className="size-3.5" aria-hidden="true" />
+          <PanelLeftIcon className="size-4" aria-hidden="true" />
         </button>
-        <button
-          type="button"
-          onClick={() => void navigate(1)}
-          className={cn(ICON_BUTTON, "size-6")}
-          aria-label="Forward"
-        >
-          <ArrowRightIcon className="size-3.5" aria-hidden="true" />
-        </button>
-      </div>
 
-      <LocationChip subject={subject} />
-
-      <div className="ml-auto flex shrink-0 items-center gap-2">
-        {/* Stream health and run state share one pill: they answer the same
-            question — is this panel telling me the truth right now. */}
-        <div className={cn(PILL, "divide-x divide-border")}>
-          <StreamIndicator />
-          <ActiveRunPill project={project} />
+        <div className={cn(PILL, "hidden gap-px p-0.5 sm:flex")}>
+          <button
+            type="button"
+            onClick={() => void navigate(-1)}
+            className={cn(ICON_BUTTON, "size-6")}
+            aria-label="Back"
+          >
+            <ArrowLeftIcon className="size-3.5" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={() => void navigate(1)}
+            className={cn(ICON_BUTTON, "size-6")}
+            aria-label="Forward"
+          >
+            <ArrowRightIcon className="size-3.5" aria-hidden="true" />
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={onToggleRail}
-          className={cn(ICON_BUTTON, railOpen && "bg-foreground/5 text-foreground")}
-          aria-label="Toggle activity panel"
-          aria-pressed={railOpen}
-        >
-          <PanelRightIcon className="size-4" aria-hidden="true" />
-        </button>
+
+        <LocationChip subject={subject} />
+
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          {/* Stream health and run state share one pill: they answer the same
+            question — is this panel telling me the truth right now. */}
+          <div className={cn(PILL, "divide-x divide-border")}>
+            <StreamIndicator />
+            <ActiveRunPill project={project} />
+          </div>
+          <button
+            type="button"
+            onClick={onToggleRail}
+            className={cn(ICON_BUTTON, railOpen && "bg-foreground/5 text-foreground")}
+            aria-label="Toggle activity panel"
+            aria-pressed={railOpen}
+          >
+            <PanelRightIcon className="size-4" aria-hidden="true" />
+          </button>
+        </div>
       </div>
     </header>
   );

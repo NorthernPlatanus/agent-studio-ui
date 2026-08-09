@@ -10,15 +10,16 @@ import { Link, useParams } from "react-router";
 import { EventRow, groupEventsByTask } from "@/entities/event";
 import { isResumable, RunStatusBadge } from "@/entities/run";
 import { useRun } from "@/entities/run/api";
-import { useActiveProject } from "@/features/project-switch/use-active-project";
+import { useActiveProject } from "@/features/project-switch";
+import { ResumeRun } from "@/features/resume-run";
 import { ApiError } from "@/shared/api/client";
 import { formatInteger, formatTimestamp, formatUsd } from "@/shared/lib/format";
 import { Banner } from "@/shared/ui/banner";
 import { Metric, MetricRow } from "@/shared/ui/metric";
 import { Panel, PanelBody, PanelHeader } from "@/shared/ui/panel";
 import { EmptyState, Region } from "@/shared/ui/region";
+import { Screen } from "@/shared/ui/screen";
 import { Skeleton } from "@/shared/ui/skeleton";
-import { Soon } from "@/shared/ui/soon";
 import { TokenPanel } from "@/widgets/token-panel";
 
 export function RunDetailPage() {
@@ -28,44 +29,42 @@ export function RunDetailPage() {
 
   if (error instanceof ApiError && error.status === 404) {
     return (
-      <div className="pt-2">
+      <Screen>
         <Banner tone="bad">
           No run <span className="font-mono">{runId}</span> in this project.{" "}
           <Link to="/runs" className="underline underline-offset-2">
             Back to runs
           </Link>
         </Banner>
-      </div>
+      </Screen>
     );
   }
   if (error) {
     return (
-      <div className="pt-2">
+      <Screen>
         <Banner tone="bad">Could not read this run.</Banner>
-      </div>
+      </Screen>
     );
   }
   if (isPending) {
     return (
-      <div className="space-y-3 pt-2">
+      <Screen>
         <Skeleton className="h-24 w-full" />
         <Skeleton className="h-64 w-full" />
-      </div>
+      </Screen>
     );
   }
 
   const groups = groupEventsByTask(data.events);
 
   return (
-    <div className="space-y-4 pt-1">
+    <Screen>
       {data.note ? (
         <Banner tone={isResumable(data) ? "warn" : "info"}>
-          {data.note}
-          {isResumable(data) ? (
-            <span className="ml-2">
-              <Soon label="Resume soon" title="Resume lands with the job-control feature" />
-            </span>
-          ) : null}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <span className="min-w-0 flex-1">{data.note}</span>
+            {isResumable(data) ? <ResumeRun project={project} /> : null}
+          </div>
         </Banner>
       ) : null}
 
@@ -121,6 +120,6 @@ export function RunDetailPage() {
           </div>
         )}
       </Region>
-    </div>
+    </Screen>
   );
 }

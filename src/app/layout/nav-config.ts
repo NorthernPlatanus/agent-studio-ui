@@ -13,6 +13,7 @@ import {
   ListChecksIcon,
   MessagesSquareIcon,
   PlayCircleIcon,
+  RocketIcon,
   SettingsIcon,
 } from "lucide-react";
 import type { ComponentType } from "react";
@@ -55,6 +56,7 @@ export const NAV_GROUPS: NavGroup[] = [
           { to: "/tasks?status=failed", label: "Failed", statusKey: "failed" },
         ],
       },
+      { to: "/launch", label: "Launch", icon: RocketIcon },
       { to: "/runs", label: "Runs", icon: PlayCircleIcon },
       { to: "/planner", label: "Planner", icon: MessagesSquareIcon },
     ],
@@ -83,6 +85,7 @@ const ROUTE_META: Array<[RegExp, RouteMeta]> = [
   [/^\/$/, { section: "Dashboard", width: "wide", rail: true }],
   [/^\/tasks\/[^/]+$/, { section: "Tasks", width: "reading", rail: false }],
   [/^\/tasks$/, { section: "Tasks", width: "wide", rail: false }],
+  [/^\/launch$/, { section: "Launch", width: "reading", rail: true }],
   [/^\/runs\/[^/]+$/, { section: "Runs", width: "wide", rail: true }],
   [/^\/runs$/, { section: "Runs", width: "wide", rail: false }],
   [/^\/planner$/, { section: "Planner", width: "reading", rail: false }],

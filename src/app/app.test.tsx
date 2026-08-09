@@ -26,10 +26,10 @@ describe("app shell", () => {
     expect(screen.queryByRole("heading", { level: 1 })).not.toBeInTheDocument();
   });
 
-  it("exposes the six top-level destinations in the main nav", async () => {
+  it("exposes every top-level destination in the main nav", async () => {
     renderApp("/");
     const nav = await screen.findByRole("navigation", { name: "Main" });
-    for (const label of ["Dashboard", "Tasks", "Runs", "Planner", "Stats"]) {
+    for (const label of ["Dashboard", "Tasks", "Launch", "Runs", "Planner", "Stats"]) {
       expect(within(nav).getAllByRole("link", { name: label }).length).toBeGreaterThan(0);
     }
     // Settings lives in the rail's preferences block, outside the <nav>.

@@ -2,6 +2,7 @@ import { createBrowserRouter, createMemoryRouter, type RouteObject } from "react
 import { AppLayout } from "@/app/layout/app-layout";
 import { NotFoundPage } from "@/app/not-found";
 import { DashboardPage } from "@/pages/dashboard";
+import { LaunchPage } from "@/pages/launch";
 import { PlannerPage } from "@/pages/planner";
 import { RunDetailPage } from "@/pages/run-detail";
 import { RunsPage } from "@/pages/runs";
@@ -18,6 +19,7 @@ export const routes: RouteObject[] = [
       { index: true, element: <DashboardPage /> },
       { path: "tasks", element: <TasksPage /> },
       { path: "tasks/:taskId", element: <TaskDetailPage /> },
+      { path: "launch", element: <LaunchPage /> },
       { path: "runs", element: <RunsPage /> },
       { path: "runs/:runId", element: <RunDetailPage /> },
       { path: "planner", element: <PlannerPage /> },

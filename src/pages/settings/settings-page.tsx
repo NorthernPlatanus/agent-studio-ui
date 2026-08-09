@@ -11,31 +11,27 @@
  */
 
 import { useProjects } from "@/entities/project/api";
-import { useActiveProject } from "@/features/project-switch/use-active-project";
+import { useActiveProject } from "@/features/project-switch";
+import { ApiError } from "@/shared/api/client";
 import { env } from "@/shared/config/env";
 import { formatInteger } from "@/shared/lib/format";
+import { describeStream } from "@/shared/lib/stream-status";
 import { useUiStore } from "@/shared/store/ui-store";
 import { Banner } from "@/shared/ui/banner";
 import { Field } from "@/shared/ui/metric";
 import { Panel, PanelBody, PanelHeader } from "@/shared/ui/panel";
+import { Screen } from "@/shared/ui/screen";
 import { Skeleton } from "@/shared/ui/skeleton";
-import { Chip, StatusDot, type Tone } from "@/shared/ui/status-dot";
-
-const STREAM_TONE: Record<string, Tone> = {
-  open: "good",
-  connecting: "warn",
-  error: "bad",
-  closed: "neutral",
-  idle: "neutral",
-};
+import { Chip, StatusDot } from "@/shared/ui/status-dot";
 
 export function SettingsPage() {
   const { project, select } = useActiveProject();
-  const { data, isPending } = useProjects();
+  const { data, isPending, error } = useProjects();
   const streamStatus = useUiStore((state) => state.streamStatus);
+  const stream = describeStream(streamStatus);
 
   return (
-    <div className="space-y-4 pt-1">
+    <Screen>
       <Panel>
         <PanelHeader title="Connection" />
         <PanelBody>
@@ -45,8 +41,8 @@ export function SettingsPage() {
             </Field>
             <Field label="Live stream">
               <span className="flex items-center gap-1.5">
-                <StatusDot tone={STREAM_TONE[streamStatus] ?? "neutral"} />
-                {streamStatus}
+                <StatusDot tone={stream.tone} pulse={streamStatus === "connecting"} />
+                {stream.label}
               </span>
             </Field>
           </dl>
@@ -62,7 +58,19 @@ export function SettingsPage() {
           meta={data ? `${formatInteger(data.projects.length)} discovered` : undefined}
         />
         <PanelBody flush>
-          {isPending ? (
+          {/* An unreachable API is the likeliest failure on this screen — it is the
+              one place that says where the API *is* — so it must say so rather
+              than spinning a skeleton forever. */}
+          {error ? (
+            <div className="p-5">
+              <Banner tone="bad">
+                Could not reach the API at <span className="font-mono text-xs">{env.apiBase}</span>.
+                {error instanceof ApiError && error.status === 0
+                  ? " Is `orchestrator serve` running?"
+                  : null}
+              </Banner>
+            </div>
+          ) : isPending ? (
             <Skeleton className="m-5 h-24" />
           ) : (
             <ul className="divide-y divide-border/50">
@@ -109,6 +117,6 @@ export function SettingsPage() {
           )}
         </PanelBody>
       </Panel>
-    </div>
+    </Screen>
   );
 }

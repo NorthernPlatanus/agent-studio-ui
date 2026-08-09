@@ -14,8 +14,8 @@
 import type { ReactNode } from "react";
 import { NavLink, useLocation } from "react-router";
 import { useSummary } from "@/entities/project/api";
-import { ProjectSwitcher } from "@/features/project-switch/project-switcher";
-import { ThemeToggle } from "@/features/theme-toggle/theme-toggle";
+import { ProjectSwitcher } from "@/features/project-switch";
+import { ThemeToggle } from "@/features/theme-toggle";
 import { formatInteger } from "@/shared/lib/format";
 import { cn } from "@/shared/lib/utils";
 import { StatusDot } from "@/shared/ui/status-dot";

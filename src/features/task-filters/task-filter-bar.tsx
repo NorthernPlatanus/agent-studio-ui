@@ -13,16 +13,13 @@ import { useEffect } from "react";
 import { useSearchParams } from "react-router";
 import { TASK_COMPLEXITIES, TASK_RISKS, TASK_STATUSES } from "@/entities/task";
 import { humanize } from "@/shared/lib/format";
-import { cn } from "@/shared/lib/utils";
 import { hasActiveTaskFilters, type TaskFilters, useUiStore } from "@/shared/store/ui-store";
-
-const CONTROL =
-  "h-8 rounded-lg border border-border bg-card px-2.5 text-[13px] text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+import { SelectInput, TextInput } from "@/shared/ui/control";
 
 /** The filter keys `…/tasks` accepts, mirrored into the query string. */
 const URL_KEYS = ["status", "milestone", "domain", "q"] as const;
 
-function Select({
+function Choice({
   label,
   value,
   options,
@@ -34,11 +31,11 @@ function Select({
   onChange: (value: string | null) => void;
 }) {
   return (
-    <select
+    <SelectInput
       aria-label={label}
+      active={value !== null}
       value={value ?? ""}
       onChange={(event) => onChange(event.target.value === "" ? null : event.target.value)}
-      className={cn(CONTROL, value !== null && "border-foreground/25 font-medium")}
     >
       <option value="">{label}</option>
       {options.map((option) => (
@@ -46,11 +43,11 @@ function Select({
           {humanize(option)}
         </option>
       ))}
-    </select>
+    </SelectInput>
   );
 }
 
-function TriSelect({
+function TriChoice({
   label,
   value,
   onChange,
@@ -60,18 +57,18 @@ function TriSelect({
   onChange: (value: boolean | null) => void;
 }) {
   return (
-    <select
+    <SelectInput
       aria-label={label}
+      active={value !== null}
       value={value === null ? "" : value ? "yes" : "no"}
       onChange={(event) =>
         onChange(event.target.value === "" ? null : event.target.value === "yes")
       }
-      className={cn(CONTROL, value !== null && "border-foreground/25 font-medium")}
     >
       <option value="">{label}</option>
       <option value="yes">{label}: yes</option>
       <option value="no">{label}: no</option>
-    </select>
+    </SelectInput>
   );
 }
 
@@ -120,61 +117,60 @@ export function TaskFilterBar({
     setParams(next, { replace: true });
   };
 
-  const active = hasActiveTaskFilters(filters);
-
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <input
+      <TextInput
         type="search"
         aria-label="Search tasks"
         placeholder="Search id or title…"
+        className="w-52"
+        active={filters.search.trim() !== ""}
         value={filters.search}
         onChange={(event) => patch({ search: event.target.value })}
-        className={cn(CONTROL, "w-52 placeholder:text-muted-foreground")}
       />
-      <Select
+      <Choice
         label="Status"
         value={filters.status[0] ?? null}
         options={TASK_STATUSES}
         onChange={(value) => patch({ status: value === null ? [] : [value] })}
       />
-      <Select
+      <Choice
         label="Milestone"
         value={filters.milestone}
         options={milestones}
         onChange={(value) => patch({ milestone: value })}
       />
-      <Select
+      <Choice
         label="Domain"
         value={filters.domain}
         options={domains}
         onChange={(value) => patch({ domain: value })}
       />
-      <Select
+      <Choice
         label="Risk"
         value={filters.risk}
         options={TASK_RISKS}
         onChange={(value) => setTaskFilters({ risk: value })}
       />
-      <Select
+      <Choice
         label="Size"
         value={filters.complexity}
         options={TASK_COMPLEXITIES}
         onChange={(value) => setTaskFilters({ complexity: value })}
       />
-      <TriSelect
+      <TriChoice
         label="Visual"
         value={filters.visual}
         onChange={(value) => setTaskFilters({ visual: value })}
       />
-      {active ? (
+      {hasActiveTaskFilters(filters) ? (
         <button
           type="button"
           onClick={() => {
             resetTaskFilters();
             setParams(new URLSearchParams(), { replace: true });
           }}
-          className="flex h-8 items-center gap-1 rounded-lg px-2 text-[13px] text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
+          className="flex h-8 items-center gap-1 rounded-lg px-2 text-[13px] text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground"
         >
           <XIcon className="size-3.5" aria-hidden="true" />
           Clear
