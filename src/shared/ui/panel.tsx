@@ -59,7 +59,22 @@ export function PanelHeader({
     // the planner's status chip and Close button 96px outside the work column at
     // 375px — a 1.4.10 reflow failure, not a cosmetic one.
     <header className={cn("flex h-12 items-center gap-3 border-b border-border px-5", className)}>
-      <h2 className="min-w-0 truncate text-sm font-medium tracking-tight">{title}</h2>
+      {/*
+        The title keeps its width and the meta absorbs the squeeze. Both had
+        plain `min-w-0`, so a tight header shrank them in proportion to their
+        content and the *title* lost characters first: the planner's specs panel
+        at 22rem read "Proposed spe…" beside a fully-legible "3 tasks · 5
+        candidate attempts if approved". When a header runs out of room the
+        expendable half is the count, not the name of the panel.
+
+        `shrink-0` alone would let a long title overflow, so it is capped at
+        half the header and still truncates past that — a weighted `shrink`
+        was tried first and is not enough: at any factor above zero the title
+        still gives up the few pixels that cost it its last word.
+      */}
+      <h2 className="min-w-0 max-w-[50%] shrink-0 truncate text-sm font-medium tracking-tight">
+        {title}
+      </h2>
       {meta ? <span className="min-w-0 truncate text-xs text-muted-foreground">{meta}</span> : null}
       {actions ? <div className="ml-auto flex shrink-0 items-center gap-1.5">{actions}</div> : null}
     </header>
