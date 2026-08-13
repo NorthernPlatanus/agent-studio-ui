@@ -1,9 +1,14 @@
 /**
  * Planning: turn `needs_plan` stubs into full specs.
  *
- * Spends tokens, so it is confirm-gated like a run — but it touches no git
- * worktree, which is why it stays available on a project whose checkout is only
- * inherited, and why its warning is quieter than the run's.
+ * Spends tokens, and `confirm` is required by the API — but the checkbox that
+ * used to collect it is gone. It gated nothing the button could not gate, and
+ * the sentence on it ("Planning spends tokens. Plan every task marked
+ * needs_plan.") was a disclaimer wrapped around the one fact worth reading,
+ * which is the scope. The scope is now the button's own label, counted.
+ *
+ * It touches no git worktree, which is why it stays available on a project
+ * whose checkout is only inherited.
  *
  * The note is the planner's positional argument: a free-text steer. It is
  * validated server-side to a shape argparse cannot read as a flag.
@@ -17,9 +22,7 @@ import { ApiError } from "@/shared/api/client";
 import { formatInteger } from "@/shared/lib/format";
 import { Banner } from "@/shared/ui/banner";
 import { Button } from "@/shared/ui/button";
-import { Checkbox } from "@/shared/ui/checkbox";
 import { ControlLabel, TextInput } from "@/shared/ui/control";
-import { Label } from "@/shared/ui/label";
 import { Panel, PanelBody, PanelHeader } from "@/shared/ui/panel";
 
 export function PlanTasks({
@@ -29,7 +32,6 @@ export function PlanTasks({
   project: string | null;
   needsPlanCount: number;
 }) {
-  const [confirm, setConfirm] = useState(false);
   const [note, setNote] = useState("");
   const startPlan = useStartPlan(project);
 
@@ -46,18 +48,6 @@ export function PlanTasks({
             placeholder="e.g. keep each task under a day of work"
             className="w-full"
           />
-        </div>
-
-        <div className="flex items-start gap-2.5">
-          <Checkbox
-            id="plan-confirm"
-            checked={confirm}
-            onCheckedChange={(value) => setConfirm(value === true)}
-            className="mt-0.5"
-          />
-          <Label htmlFor="plan-confirm" className="text-[13px] font-normal leading-relaxed">
-            Planning spends tokens. Plan every task marked needs_plan.
-          </Label>
         </div>
 
         {startPlan.error ? (
@@ -78,12 +68,21 @@ export function PlanTasks({
           </Banner>
         ) : null}
 
+        {/*
+          The scope is on the button, not in a sentence beside a checkbox. The
+          label used to read "Planning spends tokens. Plan every task marked
+          needs_plan." — two facts stapled to a control that gated neither, and
+          the second one is the only thing the operator needs at the moment of
+          pressing. It is now what the button says, with the count in it.
+        */}
         <Button
           variant="outline"
-          disabled={!confirm || startPlan.isPending || needsPlanCount === 0}
+          disabled={startPlan.isPending || needsPlanCount === 0}
           onClick={() =>
             startPlan.mutate({
-              confirm,
+              // Still affirmed to the API, which requires it — see the panel
+              // doc. What is gone is asking the operator to affirm it twice.
+              confirm: true,
               // Scoped by status, never by id. The panel has no `needs_plan`
               // picker, and the only selection on this page is Launch's, whose
               // tasks are `ready` — already planned.
@@ -95,7 +94,9 @@ export function PlanTasks({
           }
         >
           <NotebookPenIcon aria-hidden="true" />
-          {startPlan.isPending ? "Planning…" : "Plan"}
+          {startPlan.isPending
+            ? "Planning…"
+            : `Plan ${formatInteger(needsPlanCount)} task${needsPlanCount === 1 ? "" : "s"}`}
         </Button>
       </PanelBody>
     </Panel>
