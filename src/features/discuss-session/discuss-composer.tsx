@@ -102,11 +102,34 @@ export function DiscussComposer({
     </fieldset>
   );
 
+  // A turn is in flight. The composer stays *mounted and inert* rather than
+  // being swapped for a line of text, for two reasons.
+  //
+  // It was a duplicate: the transcript's live row, forty pixels above, already
+  // says the planner is working, with the pulsing dots and the elapsed
+  // expectation attached to it. Saying it again in a bare strip where the field
+  // used to be is the second copy, and the weaker one.
+  //
+  // And the field is the thing the operator is waiting to use. Removing it for
+  // the five to ten minutes a turn takes means the box they were typing in
+  // vanishes and a differently-shaped one materialises when the question lands.
+  // Held in place and dimmed, the shape never moves; only its state changes.
   if (expects === null) {
     return zone(
-      <p className="px-1 text-[12px] text-muted-foreground">
-        The planner is working — the next question arrives here.
-      </p>,
+      <ComposerShell
+        value=""
+        onChange={() => {}}
+        onSubmit={() => {}}
+        placeholder="The next question arrives here."
+        disabled
+        rows={2}
+        label="Your reply to the planner"
+        actions={
+          <Button type="submit" size="icon-sm" className="ml-auto" aria-label="Send" disabled>
+            <ArrowUpIcon aria-hidden="true" />
+          </Button>
+        }
+      />,
     );
   }
 
