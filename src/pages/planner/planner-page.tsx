@@ -234,16 +234,25 @@ export function PlannerPage() {
   // "a discrete thing with its own actions" — and wrapping one composer in a
   // frame that fills the work column drew a border around six hundred pixels of
   // nothing, with a "Planner" header duplicating the location chip above it.
-  // The composer sits on the page, near the top rather than floating in the
-  // middle of the void, which is also where the eye starts.
+  //
+  // **Bottom-aligned, and that is the whole point of it.** Once a session
+  // exists the composer is pinned to the foot of the panel, which the layout
+  // fixes and which is right. Starting one from a composer at the top therefore
+  // moved everything as far as it could possibly move: measured at 1400×900,
+  // the sentence the operator had just typed fell 526px on submit and the box
+  // they typed it into was replaced by a differently-shaped strip 600px further
+  // down, while a border, a header and a 22rem column appeared around it. Put
+  // the empty composer where the real one lives and the same submit reads as
+  // the frame growing upward around what was written. The order matches for the
+  // same reason: history above, the thing you type below, in both states.
   if (session === null) {
     return (
       <Screen fill>
         <TurnHeartbeat running={false} activity={null} />
-        <div className="min-h-0 flex-1 overflow-y-auto pt-10 pb-6 @3xl:pt-16">
-          <div className="mx-auto w-full max-w-[38rem] space-y-5">
-            {startForm}
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="mx-auto flex min-h-full w-full max-w-[38rem] flex-col justify-end gap-5 pt-10 pb-3">
             {persisted === "" ? null : <PersistedTranscript text={persisted} />}
+            {startForm}
           </div>
         </div>
       </Screen>
@@ -272,8 +281,22 @@ export function PlannerPage() {
         session column flows underneath it.
       */}
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto @4xl:flex-row @4xl:overflow-visible">
-        {/* ─── the conversation ─────────────────────────────────────────── */}
-        <Panel fill className="min-h-[26rem] min-w-0 flex-1 @4xl:min-h-0">
+        {/*
+          ─── the conversation ─────────────────────────────────────────────
+
+          The fade is for the *first* mount only, which is the frame where a
+          session starts. Bottom-aligning the start composer got the geometry
+          right — the field moves 51px on submit instead of 526 — but three
+          things still arrive out of nothing in that same commit: this border,
+          its header, and the session column. Appearing over 200ms reads as
+          appearing; appearing in one frame reads as the page being replaced.
+          Nothing moves, only opacity: motion on a control panel is a cost, and
+          this is the smallest thing that removes the blink.
+        */}
+        <Panel
+          fill
+          className="min-h-[26rem] min-w-0 flex-1 animate-in fade-in duration-200 motion-reduce:animate-none @4xl:min-h-0"
+        >
           {/* The panel's `meta` is the session id and nothing else — the old
               "requirements loop" was a caption on a screen the location chip
               already names `Planner` (`DESIGN.md` §1.3). */}
@@ -337,7 +360,7 @@ export function PlannerPage() {
           // approve button from the bottom of the page to the bottom of the pane.
           <aside
             aria-label="Session"
-            className="flex w-full shrink-0 flex-col gap-3 @4xl:min-h-0 @4xl:w-[22rem] @6xl:w-96"
+            className="flex w-full shrink-0 flex-col gap-3 animate-in fade-in duration-200 motion-reduce:animate-none @4xl:min-h-0 @4xl:w-[22rem] @6xl:w-96"
           >
             <Panel className="shrink-0">
               <PanelHeader
