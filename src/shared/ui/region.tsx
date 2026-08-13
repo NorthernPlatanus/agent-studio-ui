@@ -26,7 +26,11 @@ export function SectionHeading({
       <h2 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
         {children}
       </h2>
-      {meta ? <span className="text-[11px] text-muted-foreground/70">{meta}</span> : null}
+      {/* `text-muted-foreground` flat, never an opacity step down from it: at
+          `/70` on `bg-card` this row measured 4.04:1, under the 4.5:1 floor,
+          and it is 11px. Opacity on text multiplies against whatever surface it
+          lands on, so the same class fails on one tier and passes on another. */}
+      {meta ? <span className="text-[11px] text-muted-foreground">{meta}</span> : null}
       {actions ? <div className="ml-auto flex items-center gap-1.5">{actions}</div> : null}
     </div>
   );

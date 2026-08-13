@@ -83,7 +83,7 @@ function Line({
       <Gutter label={label} tone={tone} />
       <div className="min-w-0 flex-1 whitespace-pre-wrap break-words">{children}</div>
       {ts === undefined ? null : (
-        <span className="shrink-0 pt-px font-mono text-[10px] tabular-nums text-muted-foreground/70">
+        <span className="shrink-0 pt-px font-mono text-[11px] tabular-nums text-muted-foreground">
           {formatClock(ts)}
         </span>
       )}
@@ -354,7 +354,7 @@ export function PlannerTranscript({
         continuously-mutating `Thinking` row is a sibling rather than a child —
         see its doc comment.
       */}
-      <ul role="log" aria-busy={session.status === "running"} className="divide-y divide-border/40">
+      <ul role="log" aria-busy={session.status === "running"} className="divide-y divide-border">
         {session.frames
           .filter((frame) => !RENDERED_ELSEWHERE.has(frame.kind))
           .map((frame) => (

@@ -133,7 +133,7 @@ export function NavRail({ collapsed, project }: { collapsed: boolean; project: s
         {NAV_GROUPS.map((group) => (
           <div key={group.caption}>
             {collapsed ? null : (
-              <h2 className="px-2.5 pb-1.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground/70">
+              <h2 className="px-2.5 pb-1.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
                 {group.caption}
               </h2>
             )}
@@ -155,7 +155,7 @@ export function NavRail({ collapsed, project }: { collapsed: boolean; project: s
       <div className="shrink-0">
         <Rule />
         {collapsed ? null : (
-          <h2 className="px-2.5 pb-1.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground/70">
+          <h2 className="px-2.5 pb-1.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
             Preferences
           </h2>
         )}

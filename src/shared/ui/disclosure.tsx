@@ -49,7 +49,7 @@ export function Disclosure({
         />
         <span>{title}</span>
         {meta ? (
-          <span className="normal-case tracking-normal text-muted-foreground/70">{meta}</span>
+          <span className="normal-case tracking-normal text-muted-foreground">{meta}</span>
         ) : null}
       </summary>
       <div className="pt-2.5">{children}</div>
