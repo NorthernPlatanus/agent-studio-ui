@@ -25,27 +25,17 @@ import { Panel, PanelBody, PanelHeader } from "@/shared/ui/panel";
 export function PlanTasks({
   project,
   needsPlanCount,
-  selected,
 }: {
   project: string | null;
   needsPlanCount: number;
-  selected: readonly string[];
 }) {
   const [confirm, setConfirm] = useState(false);
   const [note, setNote] = useState("");
   const startPlan = useStartPlan(project);
-  const explicit = selected.length > 0;
 
   return (
     <Panel>
-      <PanelHeader
-        title="Plan tasks"
-        meta={
-          explicit
-            ? `${formatInteger(selected.length)} selected`
-            : `${formatInteger(needsPlanCount)} need a plan`
-        }
-      />
+      <PanelHeader title="Plan tasks" meta={`${formatInteger(needsPlanCount)} need a plan`} />
       <PanelBody className="space-y-3">
         <div className="space-y-1.5">
           <ControlLabel htmlFor="plan-note">Steer (optional)</ControlLabel>
@@ -66,8 +56,7 @@ export function PlanTasks({
             className="mt-0.5"
           />
           <Label htmlFor="plan-confirm" className="text-[13px] font-normal leading-relaxed">
-            Planning spends tokens.{" "}
-            {explicit ? "Plan the selected tasks." : "Plan every task marked needs_plan."}
+            Planning spends tokens. Plan every task marked needs_plan.
           </Label>
         </div>
 
@@ -91,12 +80,15 @@ export function PlanTasks({
 
         <Button
           variant="outline"
-          disabled={!confirm || startPlan.isPending || (!explicit && needsPlanCount === 0)}
+          disabled={!confirm || startPlan.isPending || needsPlanCount === 0}
           onClick={() =>
             startPlan.mutate({
               confirm,
-              tasks: explicit ? [...selected] : null,
-              all_needs_plan: !explicit,
+              // Scoped by status, never by id. The panel has no `needs_plan`
+              // picker, and the only selection on this page is Launch's, whose
+              // tasks are `ready` — already planned.
+              tasks: null,
+              all_needs_plan: true,
               limit: null,
               note: note.trim(),
             })

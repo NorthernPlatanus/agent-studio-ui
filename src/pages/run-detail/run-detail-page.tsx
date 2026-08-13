@@ -69,7 +69,7 @@ export function RunDetailPage() {
       ) : null}
 
       <MetricRow>
-        <Metric label="Status" value={<RunStatusBadge status={data.status} />} />
+        <Metric label="Status" value={<RunStatusBadge status={data.status} stale={data.stale} />} />
         <Metric label="Started" value={formatTimestamp(data.started_at)} />
         <Metric label="Cash" value={formatUsd(data.cost_usd)} hint="this run" />
         <Metric

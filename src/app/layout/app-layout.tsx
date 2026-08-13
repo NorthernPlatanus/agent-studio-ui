@@ -94,7 +94,12 @@ export function AppLayout() {
             <main
               id="main"
               ref={mainRef}
-              className="min-w-0 flex-1 overflow-y-auto px-4 pb-8 pt-14"
+              className={cn(
+                "min-w-0 flex-1 px-4 pt-14",
+                // A `fill` screen is a frame, not a document: it must not scroll,
+                // or the region inside it that does would be the second scrollbar.
+                meta.height === "fill" ? "overflow-hidden pb-4" : "overflow-y-auto pb-8",
+              )}
             >
               {/* The scroll container stays full-bleed so the blur spans the
                   column; the *content* is what gets capped. `wide` still has a
@@ -112,6 +117,7 @@ export function AppLayout() {
                 className={cn(
                   "@container mx-auto w-full",
                   meta.width === "reading" ? "max-w-4xl" : "max-w-[100rem]",
+                  meta.height === "fill" && "h-full min-h-0",
                 )}
               >
                 <Outlet />

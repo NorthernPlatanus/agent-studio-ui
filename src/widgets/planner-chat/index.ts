@@ -1,5 +1,8 @@
 /**
- * planner-chat: The discuss requirements loop.
- * Composed from entity ui/ + features; no direct `fetch`, no sideways widget imports.
+ * planner-chat: the discuss requirements loop — the conversation log and the
+ * artifact it produces.
  */
-export {};
+
+export { activity, atTail, PlannerTranscript, questionLabelId } from "./planner-transcript";
+export { SpecArtifacts } from "./spec-artifacts";
+export { TurnHeartbeat } from "./turn-heartbeat";

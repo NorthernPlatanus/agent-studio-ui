@@ -39,7 +39,10 @@
         "cache_miss": 49000,
         "cost": 0.0
       }
-    }
+    },
+    "last_activity_at": 1783002403.0,
+    "stale": false,
+    "stale_after_s": 900.0
   },
   "last_run": {
     "id": "20260702-141500-bbbbbb",
@@ -64,7 +67,10 @@
         "cache_miss": 49000,
         "cost": 0.0
       }
-    }
+    },
+    "last_activity_at": 1783002403.0,
+    "stale": false,
+    "stale_after_s": 900.0
   },
   "totals": {
     "cash": {

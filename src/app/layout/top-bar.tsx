@@ -36,7 +36,10 @@ function StreamIndicator() {
       title={`Live stream: ${label}`}
     >
       <StatusDot tone={tone} pulse={status === "connecting"} />
-      {label}
+      {/* Below `sm` the dot is the whole indicator. DESIGN §3.3 already says
+          this readout is "two words, never a banner"; on a 375px bar even two
+          words are two words too many, and the dot carries the same fact. */}
+      <span className="hidden sm:inline">{label}</span>
     </span>
   );
 }
@@ -52,11 +55,18 @@ function LocationChip({ subject }: { subject: string | null }) {
     // A breadcrumb landmark, not a decorative label: with no page `<h1>`
     // anywhere in the app, this is the only thing that answers "where am I" for
     // a screen reader as well as for an eye.
-    <nav aria-label="Breadcrumb" className={cn(PILL, "min-w-0 shrink gap-1.5 px-3 text-[13px]")}>
+    // `flex-1` rather than `shrink`: the chip is the only element in the bar
+    // that grows, so it claims whatever the fixed groups leave instead of
+    // sitting at its content width with room to spare (observed at 768px: 113px
+    // of chip). It still shrinks — `min-w-0` plus `truncate` on the parts.
+    <nav aria-label="Breadcrumb" className={cn(PILL, "min-w-0 flex-1 gap-1.5 px-3 text-[13px]")}>
       <span
         className={cn(
-          "shrink-0 truncate",
-          subject === null ? "font-medium" : "text-muted-foreground",
+          // Not `shrink-0`: on a phone the section name is the first thing that
+          // should give way, since the subject after it is the specific answer
+          // to "where am I".
+          "truncate",
+          subject === null ? "font-medium" : "shrink-0 text-muted-foreground",
         )}
       >
         {section}
@@ -141,7 +151,7 @@ export function TopBar({
 
         <LocationChip subject={subject} />
 
-        <div className="ml-auto flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {/* Stream health and run state share one pill: they answer the same
             question — is this panel telling me the truth right now. */}
           <div className={cn(PILL, "divide-x divide-border")}>

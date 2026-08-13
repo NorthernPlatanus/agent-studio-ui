@@ -66,13 +66,21 @@ const STAGES: Stage[] = [
 export function StagePipeline({ eventCounts }: { eventCounts: Readonly<Record<string, number>> }) {
   return (
     <div className="space-y-3">
-      <ol className="flex flex-wrap items-stretch gap-1.5">
+      {/*
+        Scrolls; never wraps. The chevrons are the whole point of this widget —
+        it exists to show a sequence in sequence order — and wrapping breaks that
+        premise silently: at 1280×800 with the activity rail in its documented
+        default-open state, `Finalize` landed alone on a second row with no
+        connector into it, reading as detached rather than terminal. A strip that
+        runs off the edge still reads as a strip.
+      */}
+      <ol className="-mx-1 flex items-stretch gap-1.5 overflow-x-auto px-1 pb-1">
         {STAGES.map((stage, index) => {
           const problems = (stage.exceptions ?? []).filter(
             (exception) => (eventCounts[exception.kind] ?? 0) > 0,
           );
           return (
-            <li key={stage.key} className="flex items-stretch gap-1.5">
+            <li key={stage.key} className="flex shrink-0 items-stretch gap-1.5">
               <div
                 className={cn(
                   "flex flex-col justify-center rounded-lg border px-2.5 py-1.5",

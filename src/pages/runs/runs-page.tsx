@@ -72,7 +72,7 @@ export function RunsPage() {
               return (
                 <Row key={run.id} interactive>
                   <Cell column={STATUS}>
-                    <RunStatusBadge status={run.status} />
+                    <RunStatusBadge status={run.status} stale={run.stale} />
                   </Cell>
                   <Cell column={RUN}>
                     <Link

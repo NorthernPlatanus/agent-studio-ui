@@ -32,6 +32,10 @@ import { ControlLabel, TextInput } from "@/shared/ui/control";
 import { Label } from "@/shared/ui/label";
 import { Panel, PanelBody, PanelHeader } from "@/shared/ui/panel";
 
+/** `RunRequest.n`'s own bounds, mirrored so the server never has to reject one. */
+const N_MIN = 1;
+const N_MAX = 64;
+
 /** The spawned command line, as the server reports it. */
 export function ArgvBanner({ job }: { job: JobAccepted }) {
   return (
@@ -71,19 +75,25 @@ export function StartRun({
   taskCount: number;
 }) {
   const [confirm, setConfirm] = useState(false);
-  const [limit, setLimit] = useState("");
+  const [candidates, setCandidates] = useState("");
   const startRun = useStartRun(project);
 
   const runnable = detail?.runnable === true;
   const explicit = selected.length > 0;
-  const n = limit.trim() === "" ? null : Number(limit);
-  const nIsValid = n === null || (Number.isInteger(n) && n > 0);
+  const n = candidates.trim() === "" ? null : Number(candidates);
+  // `le=64` mirrors `RunRequest.n`. Without the upper bound here the server 422s
+  // and the panel has to explain a rejection it could have prevented.
+  const nIsValid = n === null || (Number.isInteger(n) && n >= N_MIN && n <= N_MAX);
 
   const submit = (dryRun: boolean) => {
     startRun.mutate({
       confirm: dryRun ? false : confirm,
       dry_run: dryRun,
       tasks: explicit ? [...selected] : null,
+      // Both buttons are disabled while `n` is invalid, so this branch is a
+      // guard, not a fallback — silently sending `null` for a number the
+      // operator typed would make the dry run preview a schedule that is not
+      // the one they asked for, which is the one thing a preview must not do.
       n: nIsValid ? n : null,
     });
   };
@@ -115,25 +125,40 @@ export function StartRun({
 
         <div className="flex flex-wrap items-end gap-4">
           <div className="space-y-1.5">
-            <ControlLabel htmlFor="run-n">Task cap (--n)</ControlLabel>
+            {/*
+              This was labelled "Task cap (--n)" with a "no cap" placeholder,
+              which describes the opposite of what the flag does. `--n` overrides
+              `n_candidates` for EVERY task the run dispatches
+              (`engine/runner.py`: `n_candidates or task.get("n_candidates")`);
+              there is no cap-on-tasks flag at all. An operator typing 2 here to
+              be careful with spend was multiplying the LLM calls, not limiting
+              them.
+            */}
+            <ControlLabel htmlFor="run-n">Candidates per task (--n)</ControlLabel>
             <TextInput
               id="run-n"
               inputMode="numeric"
-              value={limit}
-              onChange={(event) => setLimit(event.target.value)}
-              placeholder="no cap"
+              value={candidates}
+              onChange={(event) => setCandidates(event.target.value)}
+              placeholder="per spec"
               className="w-28"
             />
           </div>
           <p className="min-w-48 flex-1 text-[12px] text-muted-foreground">
             {explicit
               ? "Only the selected tasks are dispatched."
-              : "With nothing selected the scheduler picks the next wave itself."}
+              : "With nothing selected the scheduler picks the next wave itself."}{" "}
+            <span className="text-foreground/70">
+              Best-of-N, applied to every dispatched task — leave it empty to use each task&rsquo;s
+              own planner-set count. Raising it multiplies attempts, and spend.
+            </span>
           </p>
         </div>
 
         {!nIsValid ? (
-          <Banner tone="warn">The task cap must be a positive whole number.</Banner>
+          <Banner tone="warn">
+            Candidates per task must be a whole number between {N_MIN} and {N_MAX}.
+          </Banner>
         ) : null}
 
         <div className="flex items-start gap-2.5 rounded-lg border border-status-warn/35 bg-status-warn/5 px-3.5 py-2.5">
@@ -169,7 +194,15 @@ export function StartRun({
             <PlayIcon aria-hidden="true" />
             {startRun.isPending ? "Starting…" : "Start run"}
           </Button>
-          <Button variant="outline" onClick={() => submit(true)} disabled={startRun.isPending}>
+          {/* `!nIsValid` here too. A dry run reads as the safe way to check a
+              value before committing it, so it is the button most likely to be
+              pressed with an out-of-range `n` — and it was the one that would
+              accept it, drop it, and print a schedule for a different N. */}
+          <Button
+            variant="outline"
+            onClick={() => submit(true)}
+            disabled={!nIsValid || startRun.isPending}
+          >
             Dry run
           </Button>
           <span className="text-[12px] text-muted-foreground">

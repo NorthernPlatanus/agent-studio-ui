@@ -23,7 +23,10 @@
           "cache_miss": 49000,
           "cost": 0.0
         }
-      }
+      },
+      "last_activity_at": 1783002403.0,
+      "stale": false,
+      "stale_after_s": 900.0
     },
     {
       "id": "20260701-101500-aaaaaa",
@@ -48,7 +51,10 @@
           "cache_miss": 59000,
           "cost": 0.0
         }
-      }
+      },
+      "last_activity_at": 1782901270.0,
+      "stale": false,
+      "stale_after_s": 900.0
     }
   ]
 }

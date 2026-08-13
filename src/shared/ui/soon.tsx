@@ -43,10 +43,19 @@ export function SoonOverlay({
       <div className="pointer-events-none opacity-40 select-none" inert>
         {children}
       </div>
-      <div className="absolute inset-0 flex items-center justify-center p-4">
+      {/*
+        Anchored to the top edge, not centred. Centring puts the note wherever
+        the dimmed block's midpoint happens to land, and that is a content line
+        as often as not: on the Planner it sat exactly on the one line of example
+        chat it was captioning, and on Stats — where the two chart cards stack at
+        mobile width — it straddled the seam between them, captioning neither.
+        The top edge is the one position in a laid-out region that is reliably a
+        caption, and §3.8 wants the layout underneath left reviewable.
+      */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center p-3">
         {/* Opaque, not translucent: a label you can read the page through looks
             like a rendering accident rather than a deliberate plug. */}
-        <span className="rounded-lg border border-dashed border-border bg-background px-3 py-1.5 text-center text-xs text-muted-foreground shadow-sm">
+        <span className="max-w-full rounded-lg border border-dashed border-border bg-background px-3 py-1.5 text-center text-xs text-muted-foreground shadow-sm">
           {note}
         </span>
       </div>

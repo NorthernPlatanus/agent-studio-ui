@@ -57,7 +57,7 @@ function ActiveRunPanel({ project }: { project: string | null }) {
             {run.id}
           </Link>
         }
-        actions={<RunStatusBadge status={run.status} />}
+        actions={<RunStatusBadge status={run.status} stale={run.stale} />}
       />
       <PanelBody className="space-y-4">
         {/* Tier 2: the pause reason belongs next to the run it explains, not in a
@@ -145,10 +145,18 @@ export function DashboardPage() {
     <Screen>
       <MetricRow>
         <Metric label="Tasks" value={formatInteger(data.task_count)} hint={project ?? ""} />
+        {/*
+          "status: ready", not "eligible for the next wave". `queue_stats` is a
+          plain per-status tally; the scheduler additionally requires every
+          dependency to be `done` (`scheduler.deps_satisfied`), so this figure is
+          an upper bound on what the next run can touch. Launch's wave preview is
+          where the deps-aware number lives, and it names the gap explicitly as
+          `unreachable` — the dashboard should not claim more than it knows.
+        */}
         <Metric
           label="Ready"
           value={formatInteger(data.queue_stats.ready ?? 0)}
-          hint="eligible for the next wave"
+          hint="status: ready — Launch shows which can actually be scheduled"
         />
         <Metric
           label="Needs human"

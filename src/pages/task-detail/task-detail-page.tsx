@@ -13,6 +13,7 @@ import { useActiveProject } from "@/features/project-switch";
 import { ApiError } from "@/shared/api/client";
 import { formatInteger, formatTimestamp, formatUsd, textOrDash } from "@/shared/lib/format";
 import { Banner } from "@/shared/ui/banner";
+import { FilePath } from "@/shared/ui/file-path";
 import { Field, Metric, MetricRow } from "@/shared/ui/metric";
 import { Panel, PanelBody, PanelHeader } from "@/shared/ui/panel";
 import { EmptyState, Region } from "@/shared/ui/region";
@@ -26,8 +27,8 @@ function FileList({ paths }: { paths: readonly string[] | undefined }) {
   return (
     <ul className="space-y-0.5">
       {paths.map((path) => (
-        <li key={path} className="truncate font-mono text-xs" title={path}>
-          {path}
+        <li key={path} className="min-w-0">
+          <FilePath path={path} />
         </li>
       ))}
     </ul>

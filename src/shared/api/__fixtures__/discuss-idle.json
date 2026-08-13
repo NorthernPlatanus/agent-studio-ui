@@ -1,0 +1,25 @@
+{
+  "project": "example",
+  "session": null,
+  "transcript": "you: rebuild the run timeline\nplanner: [q-1] should waves be lanes or nested rows?\nyou: lanes\nplanner: applied 2 spec(s).",
+  "options": {
+    "efforts": [
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max"
+    ],
+    "models": [
+      "opus",
+      "sonnet"
+    ],
+    "configured_provider": "claude_cli",
+    "configured_model": "opus",
+    "configured_effort": null,
+    "configured_session_reuse": false,
+    "max_pin_bytes": 65536,
+    "idle_ttl_s": 1800.0
+  },
+  "blocked_by_job": null
+}

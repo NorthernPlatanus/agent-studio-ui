@@ -25,6 +25,29 @@ export function jobTone(status: string): Tone {
   return TONE[status] ?? "neutral";
 }
 
+/** FastAPI's 422 shape: `detail` is a list, not a string (CONTRACT §2). */
+interface ValidationIssue {
+  msg?: unknown;
+  loc?: unknown;
+}
+
+/**
+ * The messages out of a 422's `detail` array, deduplicated and tidied.
+ *
+ * Pydantic prefixes its own text with `Value error, `, which is noise to an
+ * operator, and repeats the same message once per offending field.
+ */
+function validationMessages(detail: unknown): string[] {
+  if (!Array.isArray(detail)) return [];
+  const seen = new Set<string>();
+  for (const issue of detail as ValidationIssue[]) {
+    const raw = typeof issue?.msg === "string" ? issue.msg : "";
+    const message = raw.replace(/^Value error,\s*/, "").trim();
+    if (message !== "") seen.add(message);
+  }
+  return [...seen];
+}
+
 /**
  * Turns a spawn failure into the sentence that tells the operator what to do.
  *
@@ -33,17 +56,29 @@ export function jobTone(status: string): Tone {
  *
  * | status | meaning | what the operator does |
  * |---|---|---|
- * | 422 | the body had no `confirm` | tick the confirmation |
+ * | 422 | the body failed validation | fix whatever `detail` names |
  * | 409 | no `repo_path`, or a job already in flight | configure a checkout, or wait |
  * | 404 | unknown project, or nothing paused to resume | pick another project |
  *
  * 422 rather than 409 for a missing `confirm` is deliberate server-side: the
  * *body* is what is wrong, which keeps 409 meaning "the project's state says no".
+ *
+ * A missing `confirm` is only ONE of the things that 422s, though — `n` is
+ * bounded `1..64`, a plan note may not start with `-`, and any future validator
+ * lands here too. Hard-coding the confirm sentence told an operator whose `n`
+ * was out of range to re-tick a box that was already ticked, and never showed
+ * them the range. So the server's own messages are rendered, and the confirm
+ * copy is reserved for a 422 that really is about confirmation.
  */
 export function describeJobError(status: number, detail: unknown): string {
   const text = typeof detail === "string" ? detail : "";
   if (status === 422) {
-    return "This request spends quota and was not confirmed. Tick the confirmation and try again.";
+    const issues = validationMessages(detail);
+    const aboutConfirm = issues.some((message) => /confirm/i.test(message));
+    if (issues.length === 0 || aboutConfirm) {
+      return "This request spends quota and was not confirmed. Tick the confirmation and try again.";
+    }
+    return issues.join(" ");
   }
   if (status === 409) {
     return text !== ""

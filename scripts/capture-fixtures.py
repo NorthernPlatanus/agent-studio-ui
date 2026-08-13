@@ -81,6 +81,10 @@ TARGETS: list[tuple[str, str]] = [
     ("metrics", f"{P}/metrics"),
     ("events", f"{P}/events?limit=50"),
     ("jobs", f"{P}/jobs"),
+    # The idle planner chat: no session, plus the options the settings panel
+    # renders its dropdowns from. A live session cannot be captured — starting one
+    # calls the planner for real.
+    ("discuss-idle", f"{P}/discuss"),
     ("error-404-project", "/api/projects/nope/summary"),
     ("error-409-no-store", "/api/projects/demo-project/summary"),
     ("error-404-task", f"{P}/tasks/T-999"),

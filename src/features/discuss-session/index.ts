@@ -1,5 +1,9 @@
 /**
- * discuss-session: Drives the planner chat state machine: question → answer → preview → apply/abort.
- * Mutations land in phase 3; the endpoint surface comes from CONTRACT.md.
+ * discuss-session: the controls that drive the planner chat's state machine —
+ * start, answer, decide at the preview, retune mid-session, pin files.
  */
-export {};
+
+export { DiscussComposer, DiscussDecision } from "./discuss-composer";
+export { DiscussPins } from "./discuss-pins";
+export { DiscussSettingsPanel } from "./discuss-settings";
+export { StartDiscuss } from "./start-discuss";
