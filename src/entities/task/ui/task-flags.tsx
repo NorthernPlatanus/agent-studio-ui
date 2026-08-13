@@ -28,7 +28,7 @@ export function TaskFlags({
     <span className="flex flex-wrap items-center gap-1">
       {showDomain && task.domain ? (
         <Chip title="Planner domain">
-          <span className="text-muted-foreground/70">domain</span>
+          <span className="text-muted-foreground">domain</span>
           {task.domain}
         </Chip>
       ) : null}
