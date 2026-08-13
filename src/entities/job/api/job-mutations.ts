@@ -83,6 +83,22 @@ export function useImportBacklog(project: string | null) {
 }
 
 /**
+ * Free: closes out runs whose process died without writing a terminal status.
+ *
+ * The store's `status` column is a claim the runner only updates on the paths
+ * that unwind — a killed process leaves `running` behind forever, and every
+ * "is something running" reader believes it. This is the remedy; the `stale`
+ * flag on each run is the detection.
+ */
+export function useReconcileRuns(project: string | null) {
+  const invalidate = useJobInvalidation(project ?? "");
+  return useMutation({
+    mutationFn: () => api.post<JobAccepted>(jobsPath(project ?? "", "/reconcile")),
+    onSuccess: invalidate,
+  });
+}
+
+/**
  * SIGINT → grace → SIGTERM → SIGKILL, awaited server-side; the response is the
  * job's final state. A stopped run stays resumable from its checkpoint.
  */

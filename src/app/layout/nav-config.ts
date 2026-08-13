@@ -79,23 +79,39 @@ export interface RouteMeta {
   section: string;
   width: "wide" | "reading";
   rail: boolean;
+  /**
+   * `scroll` — the work column scrolls, which is every document-shaped screen.
+   * `fill` — the work column *is* the viewport and does not scroll; the screen
+   * pins its own chrome and exactly one region inside it scrolls.
+   *
+   * `fill` is a declaration, not a hint: it switches `<main>` from
+   * `overflow-y-auto` to `overflow-hidden`, so a screen that asks for it and
+   * then renders more than one root child will clip rather than scroll. That
+   * constraint is the point — it is what stops the double scrollbar coming back.
+   */
+  height: "scroll" | "fill";
 }
 
 const ROUTE_META: Array<[RegExp, RouteMeta]> = [
-  [/^\/$/, { section: "Dashboard", width: "wide", rail: true }],
-  [/^\/tasks\/[^/]+$/, { section: "Tasks", width: "reading", rail: false }],
-  [/^\/tasks$/, { section: "Tasks", width: "wide", rail: false }],
-  [/^\/launch$/, { section: "Launch", width: "reading", rail: true }],
-  [/^\/runs\/[^/]+$/, { section: "Runs", width: "wide", rail: true }],
-  [/^\/runs$/, { section: "Runs", width: "wide", rail: false }],
-  [/^\/planner$/, { section: "Planner", width: "reading", rail: false }],
-  [/^\/stats$/, { section: "Stats", width: "wide", rail: false }],
-  [/^\/settings$/, { section: "Settings", width: "reading", rail: false }],
+  [/^\/$/, { section: "Dashboard", width: "wide", rail: true, height: "scroll" }],
+  [/^\/tasks\/[^/]+$/, { section: "Tasks", width: "reading", rail: false, height: "scroll" }],
+  [/^\/tasks$/, { section: "Tasks", width: "wide", rail: false, height: "scroll" }],
+  [/^\/launch$/, { section: "Launch", width: "reading", rail: true, height: "scroll" }],
+  [/^\/runs\/[^/]+$/, { section: "Runs", width: "wide", rail: true, height: "scroll" }],
+  [/^\/runs$/, { section: "Runs", width: "wide", rail: false, height: "scroll" }],
+  // `wide`, not `reading`: the planner is watched for ten minutes while it
+  // changes, not read top-to-bottom once, and it carries a transcript *and* a
+  // structured artifact *and* a permanent control bar. Reading measure was the
+  // wrong measure for it, and the rail stays shut because the second column is
+  // the session's own context, not the shared activity feed.
+  [/^\/planner$/, { section: "Planner", width: "wide", rail: false, height: "fill" }],
+  [/^\/stats$/, { section: "Stats", width: "wide", rail: false, height: "scroll" }],
+  [/^\/settings$/, { section: "Settings", width: "reading", rail: false, height: "scroll" }],
 ];
 
 export function routeMeta(pathname: string): RouteMeta {
   for (const [pattern, meta] of ROUTE_META) {
     if (pattern.test(pathname)) return meta;
   }
-  return { section: "Not found", width: "reading", rail: false };
+  return { section: "Not found", width: "reading", rail: false, height: "scroll" };
 }

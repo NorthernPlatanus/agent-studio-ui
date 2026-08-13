@@ -21,7 +21,16 @@
  * declaration. So the width is measured and the columns are chosen in JS.
  */
 
-import { createContext, type ReactNode, useContext, useMemo, useRef } from "react";
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useElementWidth } from "@/shared/hooks";
 import { cn } from "@/shared/lib/utils";
 
@@ -60,6 +69,10 @@ export function DataTable({
   className,
 }: {
   columns: readonly Column[];
+  /**
+   * Floor for the table's width while columns are still being dropped. Once the
+   * narrowest column set is reached it is abandoned — see below.
+   */
   minWidth?: string;
   children: ReactNode;
   className?: string;
@@ -78,9 +91,49 @@ export function DataTable({
   );
   const keys = useMemo(() => new Set(visible.map((column) => column.key)), [visible]);
 
+  // Once every droppable column is gone, `minWidth` stops being a floor and
+  // becomes a guaranteed overflow: the tasks table at 768px had dropped down to
+  // Status/Task/Cost and was still forced to 34rem inside a 504px container, so
+  // `Cost` rendered as a clipped "C" against the right edge. The remaining
+  // columns are the ones that must fit, so below that point the table is allowed
+  // to be as narrow as its container.
+  const narrowest = visible.every((column) => !column.hideBelow);
+
+  // Whether anything is actually off the right edge *right now*. Measured rather
+  // than inferred, and re-measured on scroll, so the fade disappears once the
+  // last column is reached instead of permanently dimming it.
+  const [more, setMore] = useState(false);
+  const measure = useCallback((element: HTMLDivElement | null) => {
+    if (element === null) return;
+    setMore(element.scrollWidth - element.clientWidth - element.scrollLeft > 1);
+  }, []);
+  // `width` and `columnCount` are triggers, not inputs: the overflow has to be
+  // re-measured whenever the container resizes or the column set changes, and
+  // neither value is readable from the DOM node the measurement uses.
+  const columnCount = visible.length;
+  useEffect(() => {
+    void width;
+    void columnCount;
+    measure(wrapper.current);
+  }, [measure, width, columnCount]);
+
   return (
-    <div ref={wrapper} className={cn("overflow-x-auto", className)}>
-      <table className="w-full table-fixed border-collapse text-[13px]" style={{ minWidth }}>
+    <div
+      ref={wrapper}
+      onScroll={(event) => measure(event.currentTarget)}
+      // A soft right edge while content is still off-screen. Without it the
+      // cut-off column reads as clipped rather than scrollable — macOS overlay
+      // scrollbars are invisible at rest, so there is otherwise no cue at all.
+      className={cn(
+        "overflow-x-auto",
+        more && "[mask-image:linear-gradient(to_right,black_calc(100%-2.5rem),transparent)]",
+        className,
+      )}
+    >
+      <table
+        className="w-full table-fixed border-collapse text-[13px]"
+        style={narrowest ? undefined : { minWidth }}
+      >
         <colgroup>
           {visible.map((column) => (
             <col key={column.key} {...(column.width ? { style: { width: column.width } } : {})} />

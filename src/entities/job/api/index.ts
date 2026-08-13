@@ -10,6 +10,7 @@ export {
   type ResumeRequest,
   type RunRequest,
   useImportBacklog,
+  useReconcileRuns,
   useResumeRun,
   useStartPlan,
   useStartRun,

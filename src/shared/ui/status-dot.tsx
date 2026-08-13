@@ -80,9 +80,17 @@ export function Chip({
 }
 
 /** A chip with a leading dot — the standard rendering for a lifecycle status. */
-export function StatusChip({ tone, children }: { tone: Tone; children: ReactNode }) {
+export function StatusChip({
+  tone,
+  children,
+  title,
+}: {
+  tone: Tone;
+  children: ReactNode;
+  title?: string | undefined;
+}) {
   return (
-    <Chip tone={tone}>
+    <Chip tone={tone} title={title}>
       <StatusDot tone={tone} className="size-1.5" />
       {children}
     </Chip>

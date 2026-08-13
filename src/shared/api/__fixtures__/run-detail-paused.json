@@ -22,6 +22,9 @@
       "cost": 0.0
     }
   },
+  "last_activity_at": 1783002403.0,
+  "stale": false,
+  "stale_after_s": 900.0,
   "task_ids": [
     "T-120",
     "T-121",

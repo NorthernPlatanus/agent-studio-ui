@@ -14,10 +14,24 @@
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/shared/lib/utils";
 
-export function Panel({ className, ...props }: ComponentProps<"section">) {
+/**
+ * `fill` makes the panel a flex column that consumes its parent's height, so a
+ * header and a footer can be pinned while exactly one region between them
+ * scrolls. Only legal under a `Screen fill` (see `screen.tsx`) — a fill panel in
+ * a scrolling page has no height to consume and collapses.
+ */
+export function Panel({
+  className,
+  fill = false,
+  ...props
+}: ComponentProps<"section"> & { fill?: boolean }) {
   return (
     <section
-      className={cn("rounded-lg border border-border bg-card text-card-foreground", className)}
+      className={cn(
+        "rounded-lg border border-border bg-card text-card-foreground",
+        fill && "flex min-h-0 flex-1 flex-col overflow-hidden",
+        className,
+      )}
       {...props}
     />
   );
@@ -39,9 +53,14 @@ export function PanelHeader({
   className?: string;
 }) {
   return (
+    // `min-w-0` on both text slots is load-bearing, not defensive: a flex item
+    // defaults to `min-width: auto`, so without it `truncate` never engages and
+    // the row grows past its container instead of ellipsing. That is what pushed
+    // the planner's status chip and Close button 96px outside the work column at
+    // 375px — a 1.4.10 reflow failure, not a cosmetic one.
     <header className={cn("flex h-12 items-center gap-3 border-b border-border px-5", className)}>
-      <h2 className="truncate text-sm font-medium tracking-tight">{title}</h2>
-      {meta ? <span className="shrink-0 text-xs text-muted-foreground">{meta}</span> : null}
+      <h2 className="min-w-0 truncate text-sm font-medium tracking-tight">{title}</h2>
+      {meta ? <span className="min-w-0 truncate text-xs text-muted-foreground">{meta}</span> : null}
       {actions ? <div className="ml-auto flex shrink-0 items-center gap-1.5">{actions}</div> : null}
     </header>
   );
@@ -50,7 +69,29 @@ export function PanelHeader({
 export function PanelBody({
   className,
   flush = false,
+  scroll = false,
   ...props
-}: ComponentProps<"div"> & { flush?: boolean }) {
-  return <div className={cn(flush ? "" : "px-5 py-4", className)} {...props} />;
+}: ComponentProps<"div"> & { flush?: boolean; scroll?: boolean }) {
+  return (
+    <div
+      className={cn(
+        flush ? "" : "px-5 py-4",
+        scroll && "min-h-0 flex-1 overflow-y-auto",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+/**
+ * The pinned foot of a `fill` panel: the controls that act on whatever is
+ * scrolling above them.
+ *
+ * `shrink-0` rather than a height — the planner's action zone is a textarea in
+ * one state and a wrapping row of three buttons in another, and pinning it to a
+ * fixed height would clip the taller one.
+ */
+export function PanelFooter({ className, ...props }: ComponentProps<"div">) {
+  return <div className={cn("shrink-0 border-t border-border px-5 py-3", className)} {...props} />;
 }

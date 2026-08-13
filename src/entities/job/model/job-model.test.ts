@@ -50,4 +50,31 @@ describe("describeJobError", () => {
     expect(describeJobError(409, null)).toMatch(/only one runs at a time/i);
     expect(describeJobError(0, null)).toMatch(/orchestrator serve/);
   });
+
+  // 422 is not a synonym for "unconfirmed". `RunRequest.n` is bounded 1..64 and
+  // a plan note may not start with "-", and both land here — telling an operator
+  // whose `n` is out of range to tick a box they already ticked leaves them with
+  // no way to find the real problem, and a retry that fails identically.
+  it("renders the server's own validation messages instead of the confirm copy", () => {
+    const detail = [{ loc: ["body", "n"], msg: "Input should be less than or equal to 64" }];
+    expect(describeJobError(422, detail)).toBe("Input should be less than or equal to 64");
+  });
+
+  it("still uses the confirm copy when the validation error IS about confirmation", () => {
+    const detail = [
+      {
+        loc: ["body"],
+        msg: "Value error, a real run spends subscription quota: pass {'confirm': true}",
+      },
+    ];
+    expect(describeJobError(422, detail)).toMatch(/not confirmed/i);
+  });
+
+  it("deduplicates repeated messages and strips pydantic's prefix", () => {
+    const detail = [
+      { loc: ["body", "a"], msg: "Value error, note must not start with '-'" },
+      { loc: ["body", "b"], msg: "Value error, note must not start with '-'" },
+    ];
+    expect(describeJobError(422, detail)).toBe("note must not start with '-'");
+  });
 });

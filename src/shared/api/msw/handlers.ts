@@ -22,6 +22,7 @@
 
 import { HttpResponse, http, type RequestHandler } from "msw";
 import candidatesFixture from "@/shared/api/__fixtures__/candidates.json";
+import discussIdleFixture from "@/shared/api/__fixtures__/discuss-idle.json";
 import error404Job from "@/shared/api/__fixtures__/error-404-job.json";
 import error404Project from "@/shared/api/__fixtures__/error-404-project.json";
 import error404Task from "@/shared/api/__fixtures__/error-404-task.json";
@@ -71,6 +72,7 @@ export const fixtures = {
   metrics: metricsFixture as Schemas["Metrics"],
   events: eventsFixture as Schemas["Events"],
   jobs: jobsFixture as Schemas["Jobs"],
+  discussIdle: discussIdleFixture as Schemas["DiscussState"],
   error404Project: error404Project as { detail: string },
   error404Task: error404Task as { detail: string },
   error404Job: error404Job as { detail: string },
@@ -282,5 +284,20 @@ export const handlers: RequestHandler[] = [
   http.get(`${API}/projects/:project/jobs/:jobId/log`, ({ params }) => {
     const gate = projectGate(params.project);
     return gate ?? HttpResponse.json(fixtures.error404Job, { status: 404 });
+  }),
+
+  /*
+   * The planner chat, idle.
+   *
+   * Only the idle state is captured, and it cannot be otherwise: starting a
+   * session calls the real planner, several hundred thousand subscription tokens
+   * for the first turn alone. A test that needs a live conversation builds the
+   * session on top of this fixture's `options` and overrides this handler —
+   * which keeps it obvious which half came from the server and which half is
+   * scripted.
+   */
+  http.get(`${API}/projects/:project/discuss`, ({ params }) => {
+    const gate = projectGate(params.project);
+    return gate ?? HttpResponse.json(fixtures.discussIdle);
   }),
 ];

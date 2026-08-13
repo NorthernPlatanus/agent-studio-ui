@@ -146,7 +146,15 @@
   }
   body {
     @apply bg-background text-foreground;
-    overflow-x: hidden;
+    /*
+      No `overflow-x: hidden` here. It looks like a reflow fix and is the
+      opposite of one: clipping makes overflowing content unreachable rather than
+      scrollable, which fails WCAG 1.4.10 harder than the scrollbar it hides. It
+      did not even take effect — `<main>` is `overflow-y-auto`, and a non-visible
+      value on one axis computes the other to `auto`, so the horizontal scrollbar
+      appeared on the work column regardless. What it did do was hide the *next*
+      overflow bug from whoever introduced it.
+    */
     /* Every figure in this app is compared column-wise against another figure. */
     font-variant-numeric: tabular-nums;
   }

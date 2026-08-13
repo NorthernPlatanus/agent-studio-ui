@@ -335,6 +335,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/projects/{project}/jobs/reconcile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Reconcile
+         * @description Close out runs whose process died without writing a terminal status.
+         *
+         *     Free and confirm-less, like `import-backlog`: it calls no provider and touches
+         *     no git. It writes to the store, which is exactly why it is a spawned CLI job
+         *     rather than an API-side update — the API stays read-only (PLAN §3.1 rule 2).
+         */
+        post: operations["start_reconcile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/projects/{project}/jobs/{job_id}/stop": {
         parameters: {
             query?: never;
@@ -354,6 +378,149 @@ export interface paths {
          *     not an error: the poll that raced the exit is the common case.
          */
         post: operations["stop_job"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{project}/discuss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Discuss */
+        get: operations["get_discuss"];
+        put?: never;
+        /** Start Discuss */
+        post: operations["start_discuss"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{project}/discuss/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Close Discuss
+         * @description Abort and close. The transcript is already persisted, so history survives.
+         */
+        delete: operations["close_discuss"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{project}/discuss/{session_id}/reply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reply
+         * @description Answer the pending question, or decide at the preview (`y`/`edit`/`abort`).
+         *
+         *     409 rather than a queue when nothing is pending: a reply typed before the
+         *     planner asked would silently become the answer to whatever it asks next.
+         */
+        post: operations["reply"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{project}/discuss/{session_id}/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stream Discuss */
+        get: operations["stream_discuss"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{project}/discuss/{session_id}/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Update Settings
+         * @description Change the session's tunables. Takes effect on the next planner turn —
+         *     including one already being composed, since the loop re-reads at the top.
+         */
+        post: operations["update_settings"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{project}/discuss/{session_id}/pins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Pin
+         * @description Put a file the operator sent in front of the planner, from the next turn on.
+         *
+         *     No `require_repo_path`: a pin is content, never a location, so there is no
+         *     path to resolve and nothing is read from disk.
+         */
+        post: operations["upload_pin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{project}/discuss/{session_id}/pins/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remove Pin
+         * @description Unpin. A POST rather than a DELETE because the display path is a body
+         *     field: a name with slashes in it cannot travel in a path segment.
+         */
+        post: operations["remove_pin"];
         delete?: never;
         options?: never;
         head?: never;
@@ -468,6 +635,173 @@ export interface components {
              */
             cost: number;
         };
+        /**
+         * DiscussFrame
+         * @description One event from the loop. `seq` is the replay cursor: reconnect with
+         *     `?since=<seq>` and the stream resumes exactly where it stopped.
+         */
+        DiscussFrame: {
+            /** Seq */
+            seq: number;
+            /** Ts */
+            ts: number;
+            /** Kind */
+            kind: ("you" | "thinking" | "progress" | "assumption" | "question" | "awaiting" | "note" | "specs_preview" | "applied" | "aborted" | "turn_failed" | "limit_paused" | "error" | "closed") | string;
+            /**
+             * Data
+             * @description kind-dependent: `question` carries id/q/why, `specs_preview` carries the proposed specs, `you` carries text, `progress` carries phase/tool/target/text while a turn runs, `turn_failed` carries text, and `limit_paused` carries text/resets_at/limit_type/seconds
+             */
+            data: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * DiscussOptions
+         * @description What this project's config actually permits, so the settings UI offers
+         *     real choices instead of a hardcoded list that can drift from the harness.
+         */
+        DiscussOptions: {
+            /** Efforts */
+            efforts: ("low" | "medium" | "high" | "xhigh" | "max")[];
+            /**
+             * Models
+             * @description known model ids for the planner role
+             */
+            models: string[];
+            /** Configured Provider */
+            configured_provider: string;
+            /** Configured Model */
+            configured_model: string | null;
+            /** Configured Effort */
+            configured_effort: ("low" | "medium" | "high" | "xhigh" | "max") | null;
+            /** Configured Session Reuse */
+            configured_session_reuse: boolean;
+            /** Max Pin Bytes */
+            max_pin_bytes: number;
+            /** Idle Ttl S */
+            idle_ttl_s: number;
+        };
+        /** DiscussReplyRequest */
+        DiscussReplyRequest: {
+            /**
+             * Text
+             * @description an answer, or y / edit / abort at the preview
+             */
+            text: string;
+        };
+        /**
+         * DiscussSessionModel
+         * @description A session, whole. Every field is always present — see `DiscussFrame.data`
+         *     for why none of these are defaulted.
+         */
+        DiscussSessionModel: {
+            /** Session Id */
+            session_id: string;
+            /** Project */
+            project: string;
+            /**
+             * Request
+             * @description the operator's opening message
+             */
+            request: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "running" | "awaiting" | "done" | "aborted" | "failed";
+            /**
+             * Expects
+             * @description set only while status is `awaiting`; null otherwise
+             */
+            expects: ("answer" | "decision" | "retry" | "frozen") | null;
+            /** Started At */
+            started_at: number;
+            /** Last Activity At */
+            last_activity_at: number;
+            /**
+             * Error
+             * @description null unless the session failed
+             */
+            error: string | null;
+            /**
+             * Applied
+             * @description specs written to the store, once approved; empty before that
+             */
+            applied: {
+                [key: string]: unknown;
+            }[];
+            settings: components["schemas"]["DiscussSettingsModel"];
+            /** Pins */
+            pins: components["schemas"]["PinnedFileInfo"][];
+            /**
+             * Frames
+             * @description the conversation so far — from `?since=` when one was given, otherwise all of it, for a cold load or a reconnect
+             */
+            frames: components["schemas"]["DiscussFrame"][];
+        };
+        /**
+         * DiscussSettingsModel
+         * @description Session settings. Every field maps to a `plan_or_ask` argument or a config
+         *     value the planner call reads — none of them is a preference merely stored.
+         *
+         *     All of them can be changed mid-session; the loop re-reads them at the top of
+         *     each turn, so a change lands on the next planner call, not the next session.
+         */
+        DiscussSettingsModel: {
+            /**
+             * Note
+             * @description folded into every turn as the HUMAN NOTE block
+             * @default
+             */
+            note: string;
+            /**
+             * Only Ids
+             * @description restrict the backlog excerpt the planner is shown (`plan_or_ask(only_ids=)`); null = the whole backlog
+             */
+            only_ids?: string[] | null;
+            /**
+             * Effort
+             * @description overrides roles.planner.effort for this session. Higher effort spends more subscription tokens per call
+             */
+            effort?: ("low" | "medium" | "high" | "xhigh" | "max") | null;
+            /**
+             * Model
+             * @description overrides roles.planner.model for this session
+             */
+            model?: string | null;
+            /**
+             * Session Reuse
+             * @description overrides run.session_reuse. On, turn 2+ sends only the newest human turn and the provider session supplies the rest — far cheaper, and lost if the session drops
+             */
+            session_reuse?: boolean | null;
+            /**
+             * Max Question Rounds
+             * @description force a spec proposal after this many clarify rounds. 0 = no limit. Unanswered questions are reported, not dropped
+             * @default 0
+             */
+            max_question_rounds: number;
+        };
+        /**
+         * DiscussState
+         * @description `GET …/discuss` — everything a cold page load needs in one request.
+         */
+        DiscussState: {
+            /** Project */
+            project: string;
+            session?: components["schemas"]["DiscussSessionModel"] | null;
+            /**
+             * Transcript
+             * @description the persisted transcript of the last session (`store.load_discussion`), for history when nothing is live
+             * @default
+             */
+            transcript: string;
+            options: components["schemas"]["DiscussOptions"];
+            /**
+             * Blocked By Job
+             * @description a job is in flight, so a session cannot start — its command, for the message
+             */
+            blocked_by_job?: string | null;
+        };
         /** Event */
         Event: {
             /** Rowid */
@@ -550,7 +884,7 @@ export interface components {
              * Command
              * @enum {string}
              */
-            command: "run" | "plan" | "resume" | "import-backlog";
+            command: "run" | "plan" | "resume" | "import-backlog" | "reconcile";
             /**
              * Status
              * @enum {string}
@@ -584,7 +918,7 @@ export interface components {
              * Command
              * @enum {string}
              */
-            command: "run" | "plan" | "resume" | "import-backlog";
+            command: "run" | "plan" | "resume" | "import-backlog" | "reconcile";
             /**
              * Argv
              * @description the exact command line spawned — the panel shows it so a human can reproduce the job in a terminal
@@ -637,6 +971,36 @@ export interface components {
             queue_stats: {
                 [key: string]: number;
             };
+        };
+        /**
+         * PinRequest
+         * @description Names an existing pin, for removal. Not a location — see `PinnedFileInfo`.
+         */
+        PinRequest: {
+            /**
+             * Path
+             * @description the pin's display path, as `PinnedFileInfo.path`
+             */
+            path: string;
+        };
+        /**
+         * PinnedFileInfo
+         * @description A file attached to every planner turn. The text is not echoed back — the
+         *     UI already has it, and a 64KB blob per pin in every poll response is waste.
+         */
+        PinnedFileInfo: {
+            /**
+             * Path
+             * @description a display name under `uploaded/`, not a location. The content was sent by the operator and exists nowhere on disk
+             */
+            path: string;
+            /** Bytes */
+            bytes: number;
+            /**
+             * Truncated
+             * @description the file exceeded the pin cap and only its head is in the prompt
+             */
+            truncated: boolean;
         };
         /**
          * PlanRequest
@@ -718,6 +1082,19 @@ export interface components {
             active?: string | null;
         };
         /**
+         * ReconcileRequest
+         * @description `reconcile`. Rewrites abandoned `running` rows to `aborted` — no LLM, no
+         *     git, so no confirmation. The only mutation in the panel that costs nothing.
+         */
+        ReconcileRequest: {
+            /**
+             * Dry Run
+             * @description list what would be closed and change nothing
+             * @default false
+             */
+            dry_run: boolean;
+        };
+        /**
          * ResumeRequest
          * @description `resume`. Continues the paused run, so it spends whatever remains.
          */
@@ -760,6 +1137,23 @@ export interface components {
              */
             cost_usd: number;
             tokens: components["schemas"]["TokenChannels"];
+            /**
+             * Last Activity At
+             * @description newest events/usage row this run wrote; null when it wrote none. Not the same as started_at
+             */
+            last_activity_at?: number | null;
+            /**
+             * Stale
+             * @description the row says `running` but nothing has happened for `stale_after_s` — the process died without writing a terminal status. Render it as stalled, not running; `reconcile` closes it
+             * @default false
+             */
+            stale: boolean;
+            /**
+             * Stale After S
+             * @description the silence the `stale` flag was computed against
+             * @default 900
+             */
+            stale_after_s: number;
             /** Task Ids */
             task_ids: string[];
             /** Events */
@@ -781,6 +1175,23 @@ export interface components {
              */
             cost_usd: number;
             tokens: components["schemas"]["TokenChannels"];
+            /**
+             * Last Activity At
+             * @description newest events/usage row this run wrote; null when it wrote none. Not the same as started_at
+             */
+            last_activity_at?: number | null;
+            /**
+             * Stale
+             * @description the row says `running` but nothing has happened for `stale_after_s` — the process died without writing a terminal status. Render it as stalled, not running; `reconcile` closes it
+             * @default false
+             */
+            stale: boolean;
+            /**
+             * Stale After S
+             * @description the silence the `stale` flag was computed against
+             * @default 900
+             */
+            stale_after_s: number;
         };
         /**
          * RunRequest
@@ -806,7 +1217,7 @@ export interface components {
             tasks?: string[] | null;
             /**
              * N
-             * @description `--n`: cap on tasks dispatched this run
+             * @description `--n`: override `n_candidates` (best-of-N) for EVERY task this run dispatches, replacing each task's planner-set count. This is a multiplier on LLM calls, not a cap on anything — there is no cap-on-tasks flag. Null leaves each task's own spec alone
              */
             n?: number | null;
         };
@@ -814,6 +1225,30 @@ export interface components {
         Runs: {
             /** Runs */
             runs: components["schemas"]["RunListItem"][];
+        };
+        /**
+         * StartDiscussRequest
+         * @description Opening a session spends planner tokens on its very first turn, so it is
+         *     confirm-gated exactly like `plan`.
+         */
+        StartDiscussRequest: {
+            /**
+             * Request
+             * @description the opening message / feature description
+             */
+            request: string;
+            /**
+             * Confirm
+             * @description required — the planner call spends quota
+             * @default false
+             */
+            confirm: boolean;
+            settings?: components["schemas"]["DiscussSettingsModel"];
+            /**
+             * Uploads
+             * @description files sent from the operator's machine, attached from the first turn. Here rather than in a follow-up request because the first turn is the expensive one and is started by this call
+             */
+            uploads?: components["schemas"]["UploadedPin"][];
         };
         /**
          * StreamCursor
@@ -1044,6 +1479,37 @@ export interface components {
         TokenChannels: {
             cash?: components["schemas"]["ChannelTotals"] | null;
             subscription?: components["schemas"]["ChannelTotals"] | null;
+        };
+        /**
+         * UploadedPin
+         * @description File content sent from the operator's machine — a log, a spec, notes out
+         *     of a tracker, or a source file they would rather point at than describe.
+         *
+         *     Content, never a path into the checkout. Naming a path was the earlier
+         *     design and is gone: it asked the operator to hand-type something the planner
+         *     can usually find on its own, and it could not carry the case that matters
+         *     most, a file that is not in the repo at all.
+         *
+         *     Text in JSON, not a multipart body: the request that most needs an upload is
+         *     `POST …/discuss`, which creates the session *and* starts the billable first
+         *     turn, so a pin that arrives in a second request has already missed the turn
+         *     it was for. Uploading through the same JSON keeps the staged case and the
+         *     live case on one mechanism.
+         *
+         *     The planner prompt is text; an image cannot reach it in any form, so a binary
+         *     upload is refused with that reason rather than pinned as unreadable filler.
+         */
+        UploadedPin: {
+            /**
+             * Name
+             * @description the original filename, reduced server-side to a safe display name under `uploaded/`
+             */
+            name: string;
+            /**
+             * Text
+             * @description the file's text. Over the per-pin cap it is truncated and reported as such
+             */
+            text: string;
         };
         /** Usage */
         Usage: {
@@ -2069,6 +2535,59 @@ export interface operations {
             };
         };
     };
+    start_reconcile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReconcileRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAccepted"];
+                };
+            };
+            /** @description unknown project (and, for resume, no paused run to continue) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description a job is already in flight for this project, the profile has no project.repo_path, or the store does not exist yet */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     stop_job: {
         parameters: {
             query?: never;
@@ -2092,6 +2611,430 @@ export interface operations {
             };
             /** @description unknown project, or unknown job id */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_discuss: {
+        parameters: {
+            query?: {
+                /** @description replay cursor: return only frames newer than this seq */
+                since?: number;
+            };
+            header?: never;
+            path: {
+                project: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscussState"];
+                };
+            };
+            /** @description unknown project, or unknown discuss session */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description a discuss session is already open for this project, or the profile has no project.repo_path */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_discuss: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartDiscussRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscussSessionModel"];
+                };
+            };
+            /** @description unknown project, or unknown discuss session */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description a discuss session is already open for this project, or the profile has no project.repo_path */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    close_discuss: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+                project: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscussSessionModel"];
+                };
+            };
+            /** @description unknown project, or unknown discuss session */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description a discuss session is already open for this project, or the profile has no project.repo_path */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reply: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+                project: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscussReplyRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscussSessionModel"];
+                };
+            };
+            /** @description unknown project, or unknown discuss session */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description a discuss session is already open for this project, or the profile has no project.repo_path */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stream_discuss: {
+        parameters: {
+            query?: {
+                since?: number;
+            };
+            header?: never;
+            path: {
+                session_id: string;
+                project: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description SSE. Each `message` frame is one DiscussFrame. Reconnect with ?since=<seq> to replay from a cursor rather than lose the conversation. The stream ends after the `closed` frame. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscussFrame"];
+                    "text/event-stream": unknown;
+                };
+            };
+            /** @description unknown project, or unknown discuss session */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description a discuss session is already open for this project, or the profile has no project.repo_path */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+                project: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscussSettingsModel"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscussSessionModel"];
+                };
+            };
+            /** @description unknown project, or unknown discuss session */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description a discuss session is already open for this project, or the profile has no project.repo_path */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_pin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+                project: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UploadedPin"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscussSessionModel"];
+                };
+            };
+            /** @description unknown project, or unknown discuss session */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description a discuss session is already open for this project, or the profile has no project.repo_path */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_pin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+                project: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PinRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscussSessionModel"];
+                };
+            };
+            /** @description unknown project, or unknown discuss session */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description a discuss session is already open for this project, or the profile has no project.repo_path */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
