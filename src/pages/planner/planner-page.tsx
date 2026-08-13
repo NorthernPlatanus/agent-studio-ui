@@ -73,8 +73,9 @@ import { formatClock, formatDuration } from "@/shared/lib/format";
 import { Banner } from "@/shared/ui/banner";
 import { Button } from "@/shared/ui/button";
 import { Disclosure } from "@/shared/ui/disclosure";
+import { FilePath } from "@/shared/ui/file-path";
 import { Panel, PanelBody, PanelFooter, PanelHeader } from "@/shared/ui/panel";
-import { EmptyState, Region } from "@/shared/ui/region";
+import { Region } from "@/shared/ui/region";
 import { Screen } from "@/shared/ui/screen";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { StatusChip } from "@/shared/ui/status-dot";
@@ -194,17 +195,60 @@ export function PlannerPage() {
 
   const startForm = (
     <StartDiscuss
-      heading={session === null ? "Start a planning session" : "Start a new session"}
+      heading={session === null ? "What do you want built?" : "Start a new session"}
       blockedByJob={state.data.blocked_by_job ?? null}
       runnable={detail?.runnable === true}
       runnableDetail={detail?.runnable_detail}
       pending={start.isPending}
       error={start.error}
+      {...(session === null
+        ? {
+            // Only on the screen where this form *is* the screen. In the
+            // footer of a finished conversation it would be a third row of
+            // metadata under a transcript that already carries all of it.
+            context: (
+              <p className="flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-[12px] text-muted-foreground">
+                <span className="font-mono text-[11px] text-foreground">
+                  {options.configured_model}
+                </span>
+                <span aria-hidden="true">·</span>
+                <span className="font-mono text-[11px]">{options.configured_provider}</span>
+                {detail?.repo_path ? (
+                  <>
+                    <span aria-hidden="true">·</span>
+                    <span>reads</span>
+                    <FilePath path={detail.repo_path} />
+                  </>
+                ) : null}
+              </p>
+            ),
+          }
+        : {})}
       onStart={(request, confirm, uploads) =>
         start.mutate({ request, confirm, settings: {} as DiscussSettings, uploads })
       }
     />
   );
+
+  // No `Panel` when there is no session. A titled bordered region is Tier 1 —
+  // "a discrete thing with its own actions" — and wrapping one composer in a
+  // frame that fills the work column drew a border around six hundred pixels of
+  // nothing, with a "Planner" header duplicating the location chip above it.
+  // The composer sits on the page, near the top rather than floating in the
+  // middle of the void, which is also where the eye starts.
+  if (session === null) {
+    return (
+      <Screen fill>
+        <TurnHeartbeat running={false} activity={null} />
+        <div className="min-h-0 flex-1 overflow-y-auto pt-10 pb-6 @3xl:pt-16">
+          <div className="mx-auto w-full max-w-[38rem] space-y-5">
+            {startForm}
+            {persisted === "" ? null : <PersistedTranscript text={persisted} />}
+          </div>
+        </div>
+      </Screen>
+    );
+  }
 
   return (
     <Screen fill>
@@ -230,43 +274,26 @@ export function PlannerPage() {
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto @4xl:flex-row @4xl:overflow-visible">
         {/* ─── the conversation ─────────────────────────────────────────── */}
         <Panel fill className="min-h-[26rem] min-w-0 flex-1 @4xl:min-h-0">
+          {/* The panel's `meta` is the session id and nothing else — the old
+              "requirements loop" was a caption on a screen the location chip
+              already names `Planner` (`DESIGN.md` §1.3). */}
           <PanelHeader
             title="Planner"
-            meta={
-              session === null ? (
-                "requirements loop"
-              ) : (
-                <span className="font-mono text-xs">{session.session_id}</span>
-              )
-            }
+            meta={<span className="font-mono text-xs">{session.session_id}</span>}
           />
 
-          {session === null ? (
-            <PanelBody scroll className="space-y-3">
-              {persisted === "" ? (
-                <EmptyState>
-                  No conversation yet. Describe what you want built and the planner will ask about
-                  whatever it cannot infer from the repo and the backlog, then propose specs for you
-                  to approve.
-                </EmptyState>
-              ) : (
-                <PersistedTranscript text={persisted} />
-              )}
-              {startForm}
+          <>
+            {session.error ? (
+              <div className="shrink-0 px-5 pt-4">
+                <Banner tone="bad">{session.error}</Banner>
+              </div>
+            ) : null}
+
+            <PanelBody scroll flush className="px-3 py-3">
+              <PlannerTranscript session={session} className="h-full" />
             </PanelBody>
-          ) : (
-            <>
-              {session.error ? (
-                <div className="shrink-0 px-5 pt-4">
-                  <Banner tone="bad">{session.error}</Banner>
-                </div>
-              ) : null}
 
-              <PanelBody scroll flush className="px-5 py-4">
-                <PlannerTranscript session={session} className="h-full" />
-              </PanelBody>
-
-              {/*
+            {/*
                 The action zone: whatever "acting" means in this state — the
                 pending question's answer box, the retry, the revise note, or the
                 form that opens a new session. It is pinned, so it cannot drift
@@ -275,35 +302,34 @@ export function PlannerPage() {
                 buttons belong to the specs panel beside this one, under the
                 banner that states what they do.
               */}
-              {live ? (
-                deciding && !revising ? null : (
-                  <PanelFooter>
-                    <DiscussComposer
-                      expects={waiting}
-                      disabled={busy}
-                      revising={revising}
-                      onRevisingChange={setRevising}
-                      onSend={(text) => reply.mutate(text)}
-                      labelledBy={pending ? questionLabelId(pending.seq) : undefined}
-                    />
-                    {reply.error instanceof ApiError ? (
-                      <Banner tone="bad" className="mt-3">
-                        {typeof reply.error.detail === "string"
-                          ? reply.error.detail
-                          : "That reply was not accepted."}
-                      </Banner>
-                    ) : null}
-                  </PanelFooter>
-                )
-              ) : (
-                <PanelFooter className="max-h-[55%] overflow-y-auto">{startForm}</PanelFooter>
-              )}
-            </>
-          )}
+            {live ? (
+              deciding && !revising ? null : (
+                <PanelFooter>
+                  <DiscussComposer
+                    expects={waiting}
+                    disabled={busy}
+                    revising={revising}
+                    onRevisingChange={setRevising}
+                    onSend={(text) => reply.mutate(text)}
+                    labelledBy={pending ? questionLabelId(pending.seq) : undefined}
+                  />
+                  {reply.error instanceof ApiError ? (
+                    <Banner tone="bad" className="mt-3">
+                      {typeof reply.error.detail === "string"
+                        ? reply.error.detail
+                        : "That reply was not accepted."}
+                    </Banner>
+                  ) : null}
+                </PanelFooter>
+              )
+            ) : (
+              <PanelFooter className="max-h-[55%] overflow-y-auto">{startForm}</PanelFooter>
+            )}
+          </>
         </Panel>
 
         {/* ─── the session ──────────────────────────────────────────────── */}
-        {session === null ? null : (
+        {
           // The column is a frame too, for the same reason the page is: the specs
           // panel takes the slack and scrolls its own list, so the button that
           // writes to the store is pinned no matter how many specs are proposed.
@@ -455,7 +481,7 @@ export function PlannerPage() {
               {persisted === "" ? null : <PersistedTranscript text={persisted} />}
             </div>
           </aside>
-        )}
+        }
       </div>
     </Screen>
   );

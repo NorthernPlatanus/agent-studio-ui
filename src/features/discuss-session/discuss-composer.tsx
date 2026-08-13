@@ -19,12 +19,11 @@
  * halves share.
  */
 
-import { CheckIcon, CircleSlashIcon, PencilIcon, RotateCwIcon, SendIcon } from "lucide-react";
+import { ArrowUpIcon, CheckIcon, CircleSlashIcon, PencilIcon, RotateCwIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { Expects } from "@/entities/discuss";
-import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
-import { CONTROL } from "@/shared/ui/control";
+import { ComposerShell } from "./composer-shell";
 
 /**
  * Moves focus into the action zone when the loop starts waiting on the operator.
@@ -122,10 +121,10 @@ export function DiscussComposer({
           <CircleSlashIcon aria-hidden="true" />
           Stop waiting
         </Button>
-        <span className="text-[12px] text-muted-foreground">
-          Waiting for the subscription window to reset — this turn retries by itself. You can close
-          the tab; stopping discards the session.
-        </span>
+        {/* The reset time and the "it resumes itself" promise are on the
+            `limit_paused` row in the transcript. Repeating them here is the
+            second copy of a sentence the operator has already read. */}
+        <span className="text-[12px] text-muted-foreground">Stopping discards the session.</span>
       </div>,
     );
   }
@@ -150,9 +149,6 @@ export function DiscussComposer({
           <CircleSlashIcon aria-hidden="true" />
           Discard
         </Button>
-        <span className="text-[12px] text-muted-foreground">
-          Nothing was lost — the conversation so far is still in the session.
-        </span>
       </div>,
     );
   }
@@ -169,47 +165,46 @@ export function DiscussComposer({
         : "Answer the planner's question…";
 
   return zone(
-    <form
-      className="flex items-start gap-2"
-      onSubmit={(event) => {
-        event.preventDefault();
+    // Still no `autoFocus` on the textarea itself — see `useActionZoneFocus`.
+    // The fieldset above takes focus and announces the question; the operator's
+    // first keystroke lands in the field because it is the first control in the
+    // group, and a screen reader has heard what it is answering. The shell's own
+    // `aria-label` names the field, it does not repeat the question.
+    <ComposerShell
+      value={text}
+      onChange={setText}
+      onSubmit={() => {
         if (text.trim() !== "") send(text.trim());
       }}
-    >
-      {/*
-        Still no `autoFocus` on the textarea itself — see `useActionZoneFocus`.
-        The group above it takes focus and announces the question; the operator's
-        first keystroke lands here because the textarea is the first control in
-        the group, and a screen reader has heard what it is answering.
-      */}
-      <textarea
-        rows={2}
-        value={text}
-        disabled={disabled}
-        onChange={(event) => setText(event.target.value)}
-        onKeyDown={(event) => {
-          // Enter sends, shift+enter breaks the line. An answer here is usually
-          // one sentence, and reaching for a button after every one is friction
-          // in the loop's tightest cycle.
-          if (event.key === "Enter" && !event.shiftKey) {
-            event.preventDefault();
-            if (text.trim() !== "") send(text.trim());
-          }
-        }}
-        placeholder={placeholder}
-        aria-label="Your reply to the planner"
-        className={cn(CONTROL, "h-auto min-w-0 flex-1 resize-y py-1.5 leading-relaxed")}
-      />
-      <Button type="submit" disabled={disabled || text.trim() === ""}>
-        <SendIcon aria-hidden="true" />
-        Send
-      </Button>
-      {expects === "decision" || expects === "retry" ? (
-        <Button variant="ghost" onClick={() => onRevisingChange(false)} disabled={disabled}>
-          Back
-        </Button>
-      ) : null}
-    </form>,
+      placeholder={placeholder}
+      disabled={disabled}
+      rows={2}
+      label="Your reply to the planner"
+      actions={
+        <>
+          {expects === "decision" || expects === "retry" ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => onRevisingChange(false)}
+              disabled={disabled}
+            >
+              Back
+            </Button>
+          ) : null}
+          <Button
+            type="submit"
+            size="icon-sm"
+            className="ml-auto"
+            aria-label="Send"
+            disabled={disabled || text.trim() === ""}
+          >
+            <ArrowUpIcon aria-hidden="true" />
+          </Button>
+        </>
+      }
+    />,
   );
 }
 
@@ -242,13 +237,13 @@ export function DiscussDecision({
         <PencilIcon aria-hidden="true" />
         Revise
       </Button>
+      {/* No caption. The consequence of applying is stated once, in the tinted
+          banner directly above this row — saying it twice in two type sizes is
+          how a warning stops being read. */}
       <Button variant="ghost" onClick={onDiscard} disabled={disabled}>
         <CircleSlashIcon aria-hidden="true" />
         Discard
       </Button>
-      <span className="text-[12px] text-muted-foreground">
-        Applying upserts these specs into the store. Revising spends another planner turn.
-      </span>
     </div>
   );
 }

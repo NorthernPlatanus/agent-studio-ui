@@ -115,22 +115,46 @@ describe("planner chat", () => {
 
     expect(await screen.findByRole("button", { name: /start session/i })).toBeDisabled();
     expect(screen.getByText(/no checkout, so the planner has nothing to read/)).toBeInTheDocument();
-    expect(screen.getByRole("checkbox")).toBeDisabled();
+    // Every control on the form, not only the submit: an enabled Attach on a
+    // project the planner cannot read stages files for a turn that never runs.
+    expect(screen.getByRole("button", { name: /attach/i })).toBeDisabled();
+    expect(screen.getByLabelText(/opening message/i)).toBeDisabled();
   });
 
-  it("refuses to start without the spend confirmation, even with a checkout", async () => {
+  it("will not start on an empty message", async () => {
+    // The spend confirmation this used to assert is gone — the checkbox was a
+    // disclaimer between the field and the button, and `confirm` is still
+    // required by, and sent to, the API. What gates the button now is the only
+    // thing that ever carried information: whether there is anything to send.
     const user = userEvent.setup();
     serve(null);
     withCheckout();
     renderPlanner();
 
     const start = await screen.findByRole("button", { name: /start session/i });
-    await user.type(await screen.findByLabelText(/opening message/i), "add a switcher");
-    // A message is not a confirmation: the first turn is a real planner call.
     expect(start).toBeDisabled();
 
-    await user.click(screen.getByRole("checkbox"));
+    await user.type(await screen.findByLabelText(/opening message/i), "add a switcher");
     expect(start).toBeEnabled();
+  });
+
+  it("still affirms the spend to the API, which requires it", async () => {
+    const user = userEvent.setup();
+    const bodies: Array<{ confirm?: boolean }> = [];
+    serve(null);
+    withCheckout();
+    server.use(
+      http.post("*/api/projects/:project/discuss", async ({ request }) => {
+        bodies.push((await request.json()) as (typeof bodies)[number]);
+        return HttpResponse.json(session());
+      }),
+    );
+    renderPlanner();
+
+    await user.type(await screen.findByLabelText(/opening message/i), "add a switcher");
+    await user.click(screen.getByRole("button", { name: /start session/i }));
+
+    expect(bodies[0]?.confirm).toBe(true);
   });
 
   it("sends attached files with the create request, not after it", async () => {
@@ -150,15 +174,18 @@ describe("planner chat", () => {
     renderPlanner();
 
     await user.type(await screen.findByLabelText(/opening message/i), "fix the run timeline");
+    // The picker is behind the composer's Attach toggle now: most sessions
+    // attach nothing, and a permanent dropzone under the field was one of four
+    // identically-weighted rows competing with the message box.
+    await user.click(screen.getByRole("button", { name: /attach/i }));
     await user.upload(
-      screen.getByLabelText(/choose files/i),
+      await screen.findByLabelText(/choose files/i),
       new File(["the timeline jitters on load"], "triage notes.md", { type: "text/markdown" }),
     );
     // Staged under the name the server will give it, so what is listed here is
     // what will appear in the session's pins.
     expect(await screen.findByText(/triage-notes\.md/)).toBeInTheDocument();
 
-    await user.click(screen.getByRole("checkbox"));
     await user.click(screen.getByRole("button", { name: /start session/i }));
 
     expect(bodies).toHaveLength(1);
@@ -176,6 +203,7 @@ describe("planner chat", () => {
     withCheckout();
     renderPlanner();
 
+    await user.click(await screen.findByRole("button", { name: /attach/i }));
     await user.upload(
       await screen.findByLabelText(/choose files/i),
       new File(["PNG"], "screenshot.png", { type: "image/png" }),
@@ -444,15 +472,22 @@ describe("planner chat", () => {
     withCheckout();
     renderPlanner();
 
+    const user = userEvent.setup();
     const steer = await screen.findByLabelText(/steer/i);
     expect(steer).toBeDisabled();
-    // Exactly one file picker on screen, and it belongs to the *new* session
-    // form. A disabled dropzone on a session with no turns left is the largest
-    // dead control the page could offer, and a second "Choose files" next to a
-    // live one is worse than none.
+    // No dropzone at rest — the start form's picker is behind its Attach
+    // toggle, and the finished session's own is gone rather than disabled. A
+    // dead dropzone on a session with no turns left is the largest dead control
+    // the page could offer.
+    expect(screen.queryByLabelText(/choose files/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/nothing was attached to this session/i)).toBeInTheDocument();
+
+    // And when the operator does go looking, there is exactly one, belonging to
+    // the *new* session form: a second "Choose files" next to a live one is
+    // worse than none.
+    await user.click(screen.getByRole("button", { name: /attach/i }));
     expect(screen.getAllByLabelText(/choose files/i)).toHaveLength(1);
     expect(screen.getByLabelText(/choose files/i)).toBeEnabled();
-    expect(screen.getByText(/nothing was attached to this session/i)).toBeInTheDocument();
   });
 
   it("still offers a conversation after a session ends — the page is never read-only", async () => {
@@ -496,7 +531,6 @@ describe("planner chat", () => {
     renderPlanner();
 
     await user.type(await screen.findByLabelText(/opening message/i), "next thing");
-    await user.click(screen.getByRole("checkbox"));
     await user.click(screen.getByRole("button", { name: /start session/i }));
 
     expect(requests).toEqual([expect.objectContaining({ request: "next thing" })]);
