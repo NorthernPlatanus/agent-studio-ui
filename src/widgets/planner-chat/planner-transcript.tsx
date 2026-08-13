@@ -9,6 +9,20 @@
  * generic shell applies double here: a messenger UI is exactly what this would
  * have become by default.
  *
+ * The frames are also not a two-party dialogue. Half of them — `assumption`,
+ * `note`, `limit_paused`, `turn_failed`, `applied`, `aborted` — are loop events
+ * with no speaker, and an alternating left/right axis would have to invent one
+ * for each of them while destroying the scan column that makes a lone
+ * `assumption` findable in forty rows.
+ *
+ * Exactly one thing is taken from the messenger references, because it solves a
+ * real problem the log had: **the operator's own turns sit on a surface**
+ * (`Line surface`). Scrolling back through a long session to find what you last
+ * told the planner, a `you` row differed from a `question` row by one gutter
+ * word and a font weight — nothing the eye catches in motion. A tint is caught.
+ * It is still a full-width row with the same gutter and the same timestamp; the
+ * bubble is what was left behind.
+ *
  * Frame kinds each get a shape, because they are genuinely different things:
  *
  *   you           what the operator sent
@@ -71,19 +85,40 @@ function Line({
   label,
   tone,
   ts,
+  surface = false,
   children,
 }: {
   label: string;
   tone?: "you" | "planner" | undefined;
   ts?: number;
+  /** Puts the content on a raised tint. The one thing worth taking from a
+   *  messenger UI: the operator's own turns need to be findable when scrolling
+   *  back through a hundred machine frames, and a surface does that in
+   *  peripheral vision where a gutter word does not. Not a bubble — full width,
+   *  same row, same gutter, same timestamp. */
+  surface?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <li className="flex gap-3 px-1 py-1.5 text-[13px]">
+    <li className="flex gap-3 px-1 py-2 text-[13px]">
       <Gutter label={label} tone={tone} />
-      <div className="min-w-0 flex-1 whitespace-pre-wrap break-words">{children}</div>
+      {/*
+        `max-w-[68ch]`: these rows are as wide as the panel, which on a 1440px
+        window with both rails shut is past 110 characters — roughly twice the
+        measure prose stays readable at, and the reason a three-line question
+        read as a wall. The column keeps its left edge so the gutter still lines
+        up; the slack goes to the right of the text, where the timestamp is.
+      */}
+      <div
+        className={cn(
+          "min-w-0 max-w-[68ch] flex-1 whitespace-pre-wrap break-words",
+          surface && "rounded-md bg-foreground/[0.055] px-3 py-1.5",
+        )}
+      >
+        {children}
+      </div>
       {ts === undefined ? null : (
-        <span className="shrink-0 pt-px font-mono text-[11px] tabular-nums text-muted-foreground">
+        <span className="shrink-0 pt-1 font-mono text-[11px] tabular-nums text-muted-foreground">
           {formatClock(ts)}
         </span>
       )}
@@ -97,7 +132,7 @@ function FrameRow({ frame }: { frame: DiscussFrame }) {
   switch (frame.kind) {
     case "you":
       return (
-        <Line label="You" tone="you" ts={frame.ts}>
+        <Line label="You" tone="you" ts={frame.ts} surface>
           {String(data.text ?? "")}
         </Line>
       );
@@ -250,32 +285,59 @@ export function activity(frame: DiscussFrame | undefined): string | null {
  * instead, at roughly one line per 45 seconds.
  */
 function Thinking({ progress }: { progress?: DiscussFrame | undefined }) {
-  const doing = activity(progress);
+  const data = (progress?.data ?? {}) as Record<string, unknown>;
+  // The two channels are rendered differently because they are different kinds
+  // of text. A tool call is machine output — monospaced, clipped to one line,
+  // worthless once the turn is over. `phase === "text"` is the planner's own
+  // prose, and folding it into that same truncated mono line (which is what
+  // `activity()` does, correctly, for the *spoken* channel) threw away the one
+  // thing there is to watch during a nine-minute turn.
+  const prose = data.phase === "text" && data.text ? String(data.text) : null;
+  const tool =
+    data.phase === "tool"
+      ? data.target
+        ? `${String(data.tool)} ${String(data.target)}`
+        : String(data.tool ?? "working")
+      : null;
+
   return (
-    <div className="flex gap-3 px-1 py-1.5 text-[13px]">
+    <div className="flex gap-3 px-1 py-2 text-[13px]">
       <Gutter label="Planner" />
       {/* `min-w-0`: without it this flex item sizes to its content, the `truncate`
           below never engages, and a long tool target pushed the row 115px past
           the work column's right edge at 375px. */}
-      <span className="flex min-w-0 items-start gap-2 text-muted-foreground">
-        <span className="flex shrink-0 gap-1 pt-1.5" aria-hidden="true">
+      <div className="flex min-w-0 max-w-[68ch] flex-1 items-start gap-2">
+        <span className="flex shrink-0 gap-1 pt-2 text-muted-foreground" aria-hidden="true">
           <span className="size-1 animate-pulse rounded-full bg-current [animation-delay:0ms]" />
           <span className="size-1 animate-pulse rounded-full bg-current [animation-delay:150ms]" />
           <span className="size-1 animate-pulse rounded-full bg-current [animation-delay:300ms]" />
         </span>
-        <span className="min-w-0">
-          {doing ? (
+        <div className="min-w-0 flex-1">
+          {prose ? (
             <span
               aria-hidden="true"
-              className="block truncate font-mono text-[12px] text-foreground/70"
+              className="block whitespace-pre-wrap break-words text-foreground"
             >
-              {doing}
+              {prose}
+              <span className="ml-px inline-block animate-pulse text-muted-foreground">▍</span>
             </span>
-          ) : null}
-          reading the repo and the backlog — a planner turn runs into the hundreds of thousands of
-          input tokens, so this takes a while
-        </span>
-      </span>
+          ) : (
+            <>
+              {tool ? (
+                <span
+                  aria-hidden="true"
+                  className="block truncate font-mono text-[12px] text-foreground"
+                >
+                  {tool}
+                </span>
+              ) : null}
+              <span className="text-muted-foreground">
+                reading the repo and the backlog — turns run five to ten minutes
+              </span>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -342,28 +404,43 @@ export function PlannerTranscript({
       onScroll={() => {
         if (box.current) following.current = atTail(box.current);
       }}
+      // No border and no fill. This sits inside a `Panel`, which already draws
+      // the frame — a second bordered well inside it made the conversation a box
+      // in a box, and because the region is `h-full` under a fill panel, a short
+      // conversation drew that box around several hundred pixels of nothing.
+      // `DESIGN.md` §3.4: a log is Tier 3, content directly on its surface.
       className={cn(
-        "min-h-0 overflow-y-auto rounded-lg border border-border bg-background/50 px-3 py-2",
+        "min-h-0 overflow-y-auto px-2 py-1",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
         className,
       )}
     >
       {/*
-        `role="log"` carries an implicit `aria-live="polite"`, which is what
-        finally makes an arriving question audible. It works only because the
-        continuously-mutating `Thinking` row is a sibling rather than a child —
-        see its doc comment.
+        `min-h-full` + `justify-end` bottom-aligns a conversation too short to
+        fill the panel, so the newest frame sits just above the composer instead
+        of at the top of several hundred pixels of empty panel. The wrapper
+        carries it rather than the scroll container: `justify-content: flex-end`
+        on an element that also scrolls puts the overflowing top out of reach in
+        every engine, and this conversation is read by scrolling back.
       */}
-      <ul role="log" aria-busy={session.status === "running"} className="divide-y divide-border">
-        {session.frames
-          .filter((frame) => !RENDERED_ELSEWHERE.has(frame.kind))
-          .map((frame) => (
-            <FrameRow key={frame.seq} frame={frame} />
-          ))}
-      </ul>
-      {session.status === "running" ? (
-        <Thinking progress={session.frames.findLast((f) => f.kind === "progress")} />
-      ) : null}
+      <div className="flex min-h-full flex-col justify-end">
+        {/*
+          `role="log"` carries an implicit `aria-live="polite"`, which is what
+          finally makes an arriving question audible. It works only because the
+          continuously-mutating `Thinking` row is a sibling rather than a child —
+          see its doc comment.
+        */}
+        <ul role="log" aria-busy={session.status === "running"} className="divide-y divide-border">
+          {session.frames
+            .filter((frame) => !RENDERED_ELSEWHERE.has(frame.kind))
+            .map((frame) => (
+              <FrameRow key={frame.seq} frame={frame} />
+            ))}
+        </ul>
+        {session.status === "running" ? (
+          <Thinking progress={session.frames.findLast((f) => f.kind === "progress")} />
+        ) : null}
+      </div>
     </section>
   );
 }

@@ -1,5 +1,5 @@
 /**
- * Opening a planning conversation — the chat's composer when nothing is live.
+ * Opening a planning conversation — the composer when nothing is live.
  *
  * It renders **inside** the chat panel rather than as a panel of its own, and
  * that placement is the fix for the page's worst defect: the screen used to show
@@ -8,39 +8,46 @@
  * start again short of restarting the API. One column, transcript above,
  * something to send below, in every state.
  *
- * Confirm-gated like `plan`, and for the same reason: the very first turn is a
- * real planner call, measured at 385–425k input tokens against the subscription
- * tier. "It's only a chat" is exactly the intuition that makes this the one
- * spending control an operator would otherwise click without thinking.
+ * **The confirmation checkbox is gone.** It was an amber box carrying "I
+ * understand this spends subscription quota", and it was the loudest thing on
+ * the screen — the eye landed on a disclaimer before it found the field. Three
+ * problems with that, beyond the tone. It sat between the field and the button,
+ * so the commitment step was not the commitment control. It made the only action
+ * on an empty screen render disabled, which reads as broken rather than gated.
+ * And it was theatre: the operator who types a paragraph about what they want
+ * built has already decided, and a checkbox they tick every single time stops
+ * being read by the second session. The cost is now a plain figure beside the
+ * button — `DESIGN.md` §2's rule that computed feedback sits adjacent to the
+ * input that produces it, which is what it always should have been.
  *
- * A session also takes the project's single-writer slot — it writes the
- * transcript, the usage rows, and the specs themselves on approval — so a job in
- * flight blocks it, stated as the job, because that is what the operator stops.
+ * What is *not* removed: `confirm` is still a required field on
+ * `POST …/discuss` and the client still sends it. The server's gate is intact;
+ * this only stops asking the operator to affirm the same sentence twice.
+ *
+ * A session takes the project's single-writer slot — it writes the transcript,
+ * the usage rows, and the specs themselves on approval — so a job in flight
+ * blocks it, stated as the job, because that is what the operator stops.
  */
 
-import { MessagesSquareIcon, XIcon } from "lucide-react";
-import { useState } from "react";
+import { ArrowUpIcon, PaperclipIcon, XIcon } from "lucide-react";
+import { type ReactNode, useState } from "react";
 import { MAX_PINS, type UploadedPin, uploadDisplayPath } from "@/entities/discuss";
 import { describeJobError } from "@/entities/job";
 import { ApiError } from "@/shared/api/client";
-import { cn } from "@/shared/lib/utils";
 import { Banner } from "@/shared/ui/banner";
 import { Button } from "@/shared/ui/button";
-import { Checkbox } from "@/shared/ui/checkbox";
-import { CONTROL } from "@/shared/ui/control";
-import { Disclosure } from "@/shared/ui/disclosure";
 import { FilePath } from "@/shared/ui/file-path";
-import { Label } from "@/shared/ui/label";
-import { SectionHeading } from "@/shared/ui/region";
+import { ComposerShell } from "./composer-shell";
 import { PinFilePicker } from "./pin-file-picker";
 
 export function StartDiscuss({
-  heading = "Start a planning session",
+  heading = "What do you want built?",
   blockedByJob,
   runnable,
   runnableDetail,
   pending,
   error,
+  context,
   onStart,
 }: {
   /** Differs once a finished conversation is on screen above this form. */
@@ -51,16 +58,25 @@ export function StartDiscuss({
   runnableDetail?: string | null | undefined;
   pending: boolean;
   error: unknown;
+  /** What this session will actually run against — the planner's configured
+   *  model and the checkout it reads. Placed under the field rather than in a
+   *  caption above it: it is state, and it is the answer to the only question
+   *  an operator has before pressing the button. */
+  context?: ReactNode;
   onStart: (request: string, confirm: boolean, uploads: UploadedPin[]) => void;
 }) {
   const [request, setRequest] = useState("");
-  const [confirm, setConfirm] = useState(false);
   // Staged, not sent: there is no session yet to attach *to*. They are read
   // here and re-validated server-side, since a client is not a gate.
   const [uploads, setUploads] = useState<UploadedPin[]>([]);
   const [rejected, setRejected] = useState<string[]>([]);
+  // The picker is behind a toggle rather than a `Disclosure`: most sessions
+  // attach nothing, and a second folded heading under the field was one of the
+  // four identically-weighted uppercase rows this screen used to open with.
+  const [attaching, setAttaching] = useState(false);
 
   const blocked = blockedByJob !== null || !runnable;
+  const ready = !blocked && !pending && request.trim() !== "";
 
   const addUploads = (next: UploadedPin[]) =>
     setUploads((current) => {
@@ -72,8 +88,9 @@ export function StartDiscuss({
     });
 
   return (
-    <div className="space-y-3">
-      <SectionHeading meta="multi-turn, with the tech-lead planner">{heading}</SectionHeading>
+    <div className="mx-auto w-full max-w-[38rem] space-y-3">
+      <h2 className="text-[15px] font-medium tracking-tight">{heading}</h2>
+
       {!runnable ? (
         <Banner tone="bad">
           This project has no checkout, so the planner has nothing to read.
@@ -87,48 +104,67 @@ export function StartDiscuss({
         </Banner>
       ) : null}
 
-      <textarea
-        rows={3}
+      <ComposerShell
         value={request}
-        disabled={blocked || pending}
-        onChange={(event) => setRequest(event.target.value)}
-        placeholder="What do you want built? The planner will ask about anything it cannot infer."
-        aria-label="Opening message"
-        className={cn(CONTROL, "h-auto w-full resize-y py-2 leading-relaxed")}
+        onChange={setRequest}
+        onSubmit={() => {
+          if (ready) onStart(request.trim(), true, uploads);
+        }}
+        placeholder="Describe the change, feature or bug. The planner asks about what it cannot infer."
+        disabled={blocked}
+        rows={3}
+        label="Opening message"
+        actions={
+          <>
+            {/*
+              Attaching belongs on THIS form, not only on the live session's
+              panel. The first turn is the expensive one — the planner's opening
+              call is the repo sweep — and an attachment is the one lever that
+              aims it. One added after the answer comes back has already missed
+              the turn it was for.
+            */}
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              disabled={blocked || pending}
+              aria-expanded={attaching}
+              onClick={() => setAttaching((open) => !open)}
+            >
+              <PaperclipIcon aria-hidden="true" />
+              {uploads.length > 0 ? `${uploads.length} attached` : "Attach"}
+            </Button>
+
+            {/* The cost, as a readout rather than a warning. It is the figure
+                that should inform the click, and it belongs next to the click. */}
+            <span className="ml-auto pr-1 text-[11px] text-muted-foreground">
+              ~400k tokens per turn
+            </span>
+            <Button type="submit" size="sm" disabled={!ready}>
+              <ArrowUpIcon aria-hidden="true" />
+              {pending ? "Starting…" : "Start session"}
+            </Button>
+          </>
+        }
       />
 
-      {/*
-        Attaching belongs on THIS form, not only on the live session's panel.
-        The first turn is the expensive one — the planner's opening call is the
-        385–425k-token repo sweep — and an attachment is the one lever that aims
-        it. One added after the answer comes back has already missed the turn it
-        was for.
+      {context ?? null}
 
-        Folded, because most sessions attach nothing and the message box is the
-        thing an operator came here to use. It unfolds itself the moment a file
-        is staged, so a drop can never land somewhere the operator cannot see.
-      */}
-      <Disclosure
-        title="Attach files"
-        meta={
-          uploads.length > 0
-            ? `${uploads.length} staged`
-            : "cheaper than letting the planner search"
-        }
-        defaultOpen={uploads.length > 0 || rejected.length > 0}
-      >
+      {attaching || uploads.length > 0 || rejected.length > 0 ? (
         <div className="space-y-2">
-          <PinFilePicker
-            id="discuss-attach"
-            disabled={blocked}
-            busy={pending}
-            remaining={MAX_PINS - uploads.length}
-            onFiles={(next) => {
-              addUploads(next);
-              setRejected([]);
-            }}
-            onReject={setRejected}
-          />
+          {attaching ? (
+            <PinFilePicker
+              id="discuss-attach"
+              disabled={blocked}
+              busy={pending}
+              remaining={MAX_PINS - uploads.length}
+              onFiles={(next) => {
+                addUploads(next);
+                setRejected([]);
+              }}
+              onReject={setRejected}
+            />
+          ) : null}
 
           {rejected.length > 0 ? (
             <Banner tone="warn">
@@ -140,15 +176,8 @@ export function StartDiscuss({
             </Banner>
           ) : null}
 
-          <p className="text-[12px] text-muted-foreground">
-            Whatever you attach is read into <span className="font-medium">every</span> turn of the
-            prompt. It is cheaper than letting the planner search, it is the fix when it keeps
-            reading the wrong tree, and it is the only way to show it something that is not in the
-            repo.
-          </p>
-
           {uploads.length > 0 ? (
-            <ul className="space-y-1 pt-0.5">
+            <ul className="space-y-1">
               {uploads.map((upload) => (
                 <li key={upload.name} className="flex items-center gap-2">
                   <span className="min-w-0 flex-1">
@@ -170,21 +199,7 @@ export function StartDiscuss({
             </ul>
           ) : null}
         </div>
-      </Disclosure>
-
-      <div className="flex items-start gap-2.5 rounded-lg border border-status-warn/35 bg-status-warn/5 px-3.5 py-2.5">
-        <Checkbox
-          id="discuss-confirm"
-          checked={confirm}
-          disabled={blocked}
-          onCheckedChange={(value) => setConfirm(value === true)}
-          className="mt-0.5"
-        />
-        <Label htmlFor="discuss-confirm" className="text-[13px] font-normal leading-relaxed">
-          I understand each turn <span className="font-medium">spends subscription quota</span> — a
-          planner call reads the backlog and the repo, and has measured at 385–425k input tokens.
-        </Label>
-      </div>
+      ) : null}
 
       {error ? (
         <Banner tone="bad">
@@ -194,14 +209,6 @@ export function StartDiscuss({
           )}
         </Banner>
       ) : null}
-
-      <Button
-        onClick={() => onStart(request.trim(), confirm, uploads)}
-        disabled={blocked || !confirm || pending || request.trim() === ""}
-      >
-        <MessagesSquareIcon aria-hidden="true" />
-        {pending ? "Starting…" : "Start session"}
-      </Button>
     </div>
   );
 }
