@@ -193,6 +193,14 @@ export function PlannerPage() {
   const pending =
     waiting === "answer" ? session?.frames.findLast((f) => f.kind === "question") : undefined;
 
+  // Whether the conversation already ends with the sentence `session.error`
+  // holds. Compared by text rather than assumed: a session can fail in a way
+  // that never reached the frame log, and that error has nowhere else to go.
+  const errorEchoed =
+    session !== null &&
+    session.error !== null &&
+    session.frames.some((f) => f.kind === "error" && f.data.text === session.error);
+
   const startForm = (
     <StartDiscuss
       heading={session === null ? "What do you want built?" : "Start a new session"}
@@ -306,7 +314,18 @@ export function PlannerPage() {
           />
 
           <>
-            {session.error ? (
+            {/*
+              A terminal failure sets `session.error` *and* emits an `error`
+              frame carrying the same sentence, so the panel was saying it
+              three times: pinned here, as the last row of the conversation,
+              and as the `Failed` chip in the session column. Two of those
+              earn their place — the row is where the story ends, in reading
+              order at the bottom where the eye already is, and the chip is
+              unscrollable. This banner was the third, at the top of a panel
+              whose content is at the bottom. It stays only for the case the
+              row cannot cover: an error the frame log never carried.
+            */}
+            {session.error && !errorEchoed ? (
               <div className="shrink-0 px-5 pt-4">
                 <Banner tone="bad">{session.error}</Banner>
               </div>
