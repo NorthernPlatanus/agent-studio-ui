@@ -100,8 +100,8 @@ export function DiscussPins({
         {pins.length === 0 ? (
           <EmptyState>
             {disabled
-              ? "Nothing was attached to this session — the planner worked from the repo and the backlog alone."
-              : "Attach a file when the planner needs to see something specific — it is cheaper than letting it search, it is the fix when it keeps reading the wrong tree, and it is the only way to show it something that is not in the repo."}
+              ? "Nothing was attached to this session."
+              : "Nothing attached — the planner reads the repo and the backlog."}
           </EmptyState>
         ) : (
           <ul className="space-y-1">

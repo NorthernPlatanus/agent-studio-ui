@@ -27,9 +27,7 @@ import { ApiError } from "@/shared/api/client";
 import { formatInteger } from "@/shared/lib/format";
 import { Banner } from "@/shared/ui/banner";
 import { Button } from "@/shared/ui/button";
-import { Checkbox } from "@/shared/ui/checkbox";
 import { ControlLabel, TextInput } from "@/shared/ui/control";
-import { Label } from "@/shared/ui/label";
 import { Panel, PanelBody, PanelHeader } from "@/shared/ui/panel";
 
 /** `RunRequest.n`'s own bounds, mirrored so the server never has to reject one. */
@@ -74,7 +72,6 @@ export function StartRun({
   /** How many tasks the scheduler would pick when nothing is selected. */
   taskCount: number;
 }) {
-  const [confirm, setConfirm] = useState(false);
   const [candidates, setCandidates] = useState("");
   const startRun = useStartRun(project);
 
@@ -87,7 +84,7 @@ export function StartRun({
 
   const submit = (dryRun: boolean) => {
     startRun.mutate({
-      confirm: dryRun ? false : confirm,
+      confirm: !dryRun,
       dry_run: dryRun,
       tasks: explicit ? [...selected] : null,
       // Both buttons are disabled while `n` is invalid, so this branch is a
@@ -148,9 +145,12 @@ export function StartRun({
             {explicit
               ? "Only the selected tasks are dispatched."
               : "With nothing selected the scheduler picks the next wave itself."}{" "}
-            <span className="text-foreground/70">
-              Best-of-N, applied to every dispatched task — leave it empty to use each task&rsquo;s
-              own planner-set count. Raising it multiplies attempts, and spend.
+            {/* Kept, and only trimmed. This is the one line on the panel that
+                is not restating the obvious: `--n` reads as a cap and is the
+                opposite, and an operator typing 2 to be careful multiplies the
+                spend. Empty is the planner's own count. */}
+            <span className="text-foreground">
+              Best-of-N per task — raising it multiplies attempts and spend.
             </span>
           </p>
         </div>
@@ -160,20 +160,6 @@ export function StartRun({
             Candidates per task must be a whole number between {N_MIN} and {N_MAX}.
           </Banner>
         ) : null}
-
-        <div className="flex items-start gap-2.5 rounded-lg border border-status-warn/35 bg-status-warn/5 px-3.5 py-2.5">
-          <Checkbox
-            id="run-confirm"
-            checked={confirm}
-            onCheckedChange={(value) => setConfirm(value === true)}
-            disabled={!runnable}
-            className="mt-0.5"
-          />
-          <Label htmlFor="run-confirm" className="text-[13px] font-normal leading-relaxed">
-            I understand this <span className="font-medium">spends subscription quota</span> and
-            writes to git worktrees in the checkout above.
-          </Label>
-        </div>
 
         {startRun.error ? (
           <Banner tone="bad">
@@ -186,10 +172,22 @@ export function StartRun({
 
         {startRun.data ? <ArgvBanner job={startRun.data} /> : null}
 
+        {/*
+          The amber "I understand this spends subscription quota and writes to
+          git worktrees" box is gone. Both halves of it were true and neither
+          was news at the moment of pressing: the checkout it writes to is named
+          two rows up, and `Dry run` is sitting right here as the thing to press
+          if you are not sure. What the box actually did was make the commitment
+          control a checkbox and leave the button a formality.
+
+          `confirm` is still what the API requires and still what it is sent —
+          this is a step in the sequence (`DESIGN.md` §3.7), and the button is
+          the step.
+        */}
         <div className="flex flex-wrap items-center gap-2">
           <Button
             onClick={() => submit(false)}
-            disabled={!runnable || !confirm || !nIsValid || startRun.isPending}
+            disabled={!runnable || !nIsValid || startRun.isPending}
           >
             <PlayIcon aria-hidden="true" />
             {startRun.isPending ? "Starting…" : "Start run"}

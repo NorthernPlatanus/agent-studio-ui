@@ -110,7 +110,7 @@ export function PinFilePicker({
       <span className="mt-1 block text-[11px] text-muted-foreground">
         {remaining <= 0
           ? "Limit reached — remove one to attach another."
-          : "Text files: logs, specs, notes, markdown. Images cannot be read by the planner."}
+          : "Text only — the planner cannot read images."}
       </span>
     </label>
   );

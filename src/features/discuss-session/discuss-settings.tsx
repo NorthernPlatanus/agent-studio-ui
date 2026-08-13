@@ -166,8 +166,7 @@ export function DiscussSettingsPanel({
               <option value="false">off — resend the full payload each turn</option>
             </SelectInput>
             <p className="text-[11px] text-muted-foreground">
-              On is far cheaper per turn; if the provider drops the session the next turn silently
-              costs full price again.
+              Cheaper per turn, until the provider drops the session.
             </p>
           </div>
 
@@ -190,8 +189,7 @@ export function DiscussSettingsPanel({
               className="w-full"
             />
             <p className="text-[11px] text-muted-foreground">
-              Forces a proposal after this many question rounds. Unanswered questions are reported
-              in the transcript, not dropped.
+              Forces a proposal after this many rounds.
             </p>
           </div>
         </div>
@@ -214,8 +212,7 @@ export function DiscussSettingsPanel({
             className="w-full"
           />
           <p className="text-[11px] text-muted-foreground">
-            Narrows the backlog excerpt the planner is shown. Smaller scope, cheaper turn, less
-            context for it to get deps right.
+            Narrows the backlog excerpt — cheaper, but worse at dependencies.
           </p>
         </div>
       </PanelBody>
