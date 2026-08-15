@@ -14,7 +14,7 @@
  * offer buttons, not a textarea.
  */
 
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { RouterProvider } from "react-router";
@@ -238,11 +238,18 @@ describe("planner chat", () => {
 
     expect(await screen.findByText("Create projects, or only select?")).toBeInTheDocument();
     expect(screen.getByText(/why it matters: changes files/)).toBeInTheDocument();
-    // Twice on purpose: inline where the planner said it, and collected in the
-    // Assumptions region — an unchallenged assumption becomes a spec, so it gets
-    // a standing list rather than only a line that scrolls away.
-    expect(screen.getAllByText(/reads the existing allowlist/)).toHaveLength(2);
+    // Once, where the planner said it. It used to be twice — inline *and* in a
+    // standing Assumptions region in the session column — which is the
+    // duplication that turned this page into a control panel with a chat in the
+    // corner. The collected list is still reachable, in the Session sheet, for
+    // the case it exists to serve: reading the whole set without scrolling.
+    expect(screen.getAllByText(/reads the existing allowlist/)).toHaveLength(1);
+    // The status is a chip in the header, not a panel in a column beside it.
     expect(screen.getByText("Waiting on your answer")).toBeInTheDocument();
+
+    await userEvent.setup().click(screen.getByRole("button", { name: "Session" }));
+    expect(await screen.findByText("Assumptions")).toBeInTheDocument();
+    expect(screen.getAllByText(/reads the existing allowlist/)).toHaveLength(2);
   });
 
   it("sends a typed answer while a question is pending", async () => {
@@ -288,10 +295,17 @@ describe("planner chat", () => {
 
     // No free-text box here: "looks good" typed at the preview is an edit note
     // to the loop, not an approval.
-    expect(await screen.findByRole("button", { name: /apply to the backlog/i })).toBeEnabled();
+    //
+    // Exactly one Apply button, and that is the assertion. There used to be two
+    // — the session column's and the narrow layout's, one of them
+    // `display: none` — for a single irreversible act, which jsdom (applying no
+    // CSS) could only tell apart by scoping to a column that no longer exists.
+    const apply = await screen.findAllByRole("button", { name: /apply to the backlog/i });
+    expect(apply).toHaveLength(1);
+    expect(apply[0]).toBeEnabled();
     expect(screen.queryByPlaceholderText(/answer the planner/i)).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /apply to the backlog/i }));
+    await user.click(apply[0] as HTMLElement);
     expect(replies).toEqual(["y"]);
   });
 
@@ -421,7 +435,7 @@ describe("planner chat", () => {
     // A human-only spec is a different decision and says so.
     expect(screen.getByText("human-only")).toBeInTheDocument();
     // Nothing is written until the operator says so.
-    expect(screen.getByText(/Nothing has been written yet/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Nothing has been written yet/).length).toBeGreaterThan(0);
   });
 
   it("warns when an agent task has no write allowlist", async () => {
@@ -464,30 +478,104 @@ describe("planner chat", () => {
 
     expect(await screen.findByText("Applied specs")).toBeInTheDocument();
     expect(screen.getByText(/Written to the backlog/)).toBeInTheDocument();
-    expect(screen.getByText("Applied 1 spec")).toBeInTheDocument();
+    // The transcript's own row is the third statement of the same fact, and it
+    // is the one in reading order. There is no fourth: the status chip that
+    // used to say "Applied 1 spec" beside all of them went with the rest of the
+    // ended session's furniture.
+    expect(screen.getByText(/Applied 1 spec\(s\) to the backlog/)).toBeInTheDocument();
+    // And no fourth: there is no session column on this page any more, applied
+    // or otherwise. What the session produced is in the conversation that
+    // produced it.
+    expect(screen.queryByRole("complementary", { name: /session/i })).not.toBeInTheDocument();
+    // Nothing to decide on a session that already wrote — the action zone is
+    // the way into the next conversation, not a second chance at this one.
+    expect(screen.queryByRole("button", { name: /apply to the backlog/i })).not.toBeInTheDocument();
   });
 
-  it("locks the settings of a finished session, and drops the dead dropzone", async () => {
+  it("puts nothing beside a finished session that has nothing to show", async () => {
+    // The knobs outweighing the conversation, which is the defect this page
+    // keeps regressing into. An aborted session with no proposal and no
+    // attachments used to draw a 22rem column holding a status panel that
+    // restated the transcript's closing row, an attachments list reading
+    // "none", and a full settings grid rendered disabled — six controls
+    // explaining how they would have steered a loop that has stopped.
     serve(session({ status: "aborted", expects: null, frames: [frame("aborted", {})] }));
     withCheckout();
     renderPlanner();
 
     const user = userEvent.setup();
-    const steer = await screen.findByLabelText(/steer/i);
-    expect(steer).toBeDisabled();
-    // No dropzone at rest — the start form's picker is behind its Attach
-    // toggle, and the finished session's own is gone rather than disabled. A
-    // dead dropzone on a session with no turns left is the largest dead control
-    // the page could offer.
-    expect(screen.queryByLabelText(/choose files/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/nothing was attached to this session/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Closed — nothing was written/)).toBeInTheDocument();
+    expect(screen.queryByRole("complementary", { name: /session/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/steer/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/nothing was attached to this session/i)).not.toBeInTheDocument();
 
-    // And when the operator does go looking, there is exactly one, belonging to
-    // the *new* session form: a second "Choose files" next to a live one is
+    // What is left is the conversation and somewhere to write, and exactly one
+    // picker — the new session's. A second "Choose files" next to a live one is
     // worse than none.
+    expect(screen.queryByLabelText(/choose files/i)).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /attach/i }));
     expect(screen.getAllByLabelText(/choose files/i)).toHaveLength(1);
     expect(screen.getByLabelText(/choose files/i)).toBeEnabled();
+  });
+
+  it("keeps what was attached to a finished session, without the dead knobs", async () => {
+    // Attachments are the one part of a session's setup that is still worth
+    // reading once it has ended: they are what that conversation was given.
+    // The settings are not — they only ever applied to the next turn.
+    const user = userEvent.setup();
+    serve(
+      session({
+        status: "aborted",
+        expects: null,
+        pins: [{ path: "uploaded/spec.md", bytes: 120, truncated: false }],
+        frames: [frame("aborted", {})],
+      }),
+    );
+    withCheckout();
+    renderPlanner();
+
+    // Setup lives in a sheet now, not in the session column — opening it used
+    // to collapse the proposal it was sitting under.
+    await user.click(await screen.findByRole("button", { name: "Session" }));
+
+    expect(await screen.findByText("uploaded/spec.md")).toBeInTheDocument();
+    expect(screen.getByText(/this session has ended/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/steer/i)).not.toBeInTheDocument();
+  });
+
+  it("does not compete for the session column's height with the proposal", async () => {
+    // The defect this replaced: setup was a `<details>` at the foot of a
+    // fixed-height column whose specs panel took the slack, so unfolding it
+    // squeezed the proposal — and the approve button attached to it — to a
+    // header and a footer with nothing between them. Nothing on the column's
+    // critical path may be reachable only by taking room from the proposal, so
+    // the controls are not in the column at all until asked for.
+    const user = userEvent.setup();
+    serve(session());
+    withCheckout();
+    renderPlanner();
+
+    expect(await screen.findByRole("button", { name: "Session" })).toBeInTheDocument();
+    expect(screen.queryByLabelText(/steer/i)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Session" }));
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByLabelText(/steer/i)).toBeInTheDocument();
+  });
+
+  it("says what a new session will run as, on both sides of the field", async () => {
+    // The model and the checkout, not a sentence about them. This row used to
+    // left-pack five values under a 38rem composer and, on an ended session,
+    // carry a paragraph explaining that the transcript is kept — the answer to
+    // a question nobody asks twice, in the one place the eye lands last.
+    serve(session({ status: "aborted", expects: null, frames: [frame("aborted", {})] }));
+    withCheckout();
+    renderPlanner();
+
+    expect(await screen.findByText(/start a new session/i)).toBeInTheDocument();
+    expect(screen.queryByText(/conversation above goes with it/i)).not.toBeInTheDocument();
+    expect(screen.getByText("reads")).toBeInTheDocument();
+    expect(screen.getByText(/effort$/)).toBeInTheDocument();
   });
 
   it("still offers a conversation after a session ends — the page is never read-only", async () => {
@@ -537,13 +625,16 @@ describe("planner chat", () => {
   });
 
   it("puts the proposed specs in the conversation, above the buttons that decide them", async () => {
-    // The decision is about *these* specs. With the preview in a panel below the
-    // composer, the operator pressed "Apply to the backlog" while looking at
-    // whatever the transcript happened to be showing.
+    // The plan is the thing the conversation exists to produce, so it is a row
+    // in the conversation — where the planner produced it — and not a panel in
+    // a column beside one. The log used to be filtered so that `specs_preview`
+    // rendered nowhere in it at all: the planner fell silent at the exact turn
+    // it answered the question it was asked.
     serve(
       session({
         expects: "decision",
         frames: [
+          frame("you", { text: "add a project switcher" }),
           frame("specs_preview", { specs: [{ id: "T-900", title: "Project switcher" }] }),
           frame("awaiting", { expects: "decision" }),
         ],
@@ -552,13 +643,49 @@ describe("planner chat", () => {
     renderPlanner();
 
     const specs = await screen.findByText("Proposed specs");
+    expect(within(screen.getByRole("log")).getByText("T-900")).toBeInTheDocument();
+
+    // And the decision is after it in reading order — pinned in the action
+    // zone, so that a proposal of thirty specs cannot push its own approve
+    // button off the bottom of anything.
     const apply = screen.getByRole("button", { name: /apply to the backlog/i });
     expect(specs.compareDocumentPosition(apply) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it("keeps only the newest proposal in full, marking the ones a revision replaced", async () => {
+    // A revise round replaces the plan wholesale. Re-drawing every superseded
+    // list in the scrollback would bury the live one under its own history.
+    serve(
+      session({
+        expects: "decision",
+        frames: [
+          frame("specs_preview", {
+            specs: [
+              { id: "T-800", title: "First pass" },
+              { id: "T-801", title: "Second" },
+            ],
+          }),
+          frame("you", { text: "split T-800" }),
+          frame("specs_preview", { specs: [{ id: "T-900", title: "Project switcher" }] }),
+          frame("awaiting", { expects: "decision" }),
+        ],
+      }),
+    );
+    renderPlanner();
+
+    expect(await screen.findByText("T-900")).toBeInTheDocument();
+    expect(screen.queryByText("T-800")).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/Proposed 2 specs — replaced by the revision below/),
+    ).toBeInTheDocument();
+  });
+
   it("offers every configured effort and model the server reported", async () => {
+    const user = userEvent.setup();
     serve(session());
     renderPlanner();
+
+    await user.click(await screen.findByRole("button", { name: "Session" }));
 
     const effort = (await screen.findByLabelText(/reasoning effort/i)) as HTMLSelectElement;
     const values = [...effort.options].map((option) => option.value);
