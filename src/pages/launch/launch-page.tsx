@@ -196,7 +196,7 @@ export function LaunchPage() {
                   <li key={task.id}>
                     <label
                       htmlFor={`pick-${task.id}`}
-                      className="flex cursor-pointer items-center gap-2.5 px-5 py-1.5 text-[13px] hover:bg-foreground/[0.03]"
+                      className="flex items-center gap-2.5 px-5 py-1.5 text-[13px] hover:bg-foreground/[0.03]"
                     >
                       <Checkbox
                         id={`pick-${task.id}`}

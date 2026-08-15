@@ -14,6 +14,7 @@ import { Link } from "react-router";
 import { TASK_STATUSES, taskStatusTone } from "@/entities/task";
 import { formatInteger, humanize } from "@/shared/lib/format";
 import { cn } from "@/shared/lib/utils";
+import { FOCUS_RING } from "@/shared/ui/focus";
 import { EmptyState } from "@/shared/ui/region";
 import { StatusDot } from "@/shared/ui/status-dot";
 
@@ -52,7 +53,11 @@ export function QueueBoard({ queueStats }: { queueStats: Readonly<Record<string,
           <li key={row.status}>
             <Link
               to={`/tasks?status=${row.status}`}
-              className="flex items-baseline gap-2 rounded px-1 py-0.5 -mx-1 text-[13px] hover:bg-foreground/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              className={cn(
+                "flex items-baseline gap-2 rounded px-1 py-0.5 -mx-1 text-[13px]",
+                "hover:bg-foreground/5",
+                FOCUS_RING,
+              )}
             >
               <StatusDot tone={row.tone} pulse={false} className="translate-y-px" />
               <span className="min-w-0 flex-1 truncate text-muted-foreground">

@@ -86,7 +86,7 @@ export function PinFilePicker({
       className={cn(
         "block rounded-lg border border-dashed px-3 py-3 text-center text-[13px] transition-colors",
         over ? "border-foreground/40 bg-foreground/[0.04]" : "border-border",
-        blocked ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:border-foreground/30",
+        blocked ? "cursor-not-allowed opacity-50" : "hover:border-foreground/30",
       )}
     >
       <input

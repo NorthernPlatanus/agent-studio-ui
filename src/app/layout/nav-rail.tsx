@@ -18,11 +18,14 @@ import { ProjectSwitcher } from "@/features/project-switch";
 import { ThemeToggle } from "@/features/theme-toggle";
 import { formatInteger } from "@/shared/lib/format";
 import { cn } from "@/shared/lib/utils";
+import { FOCUS_RING } from "@/shared/ui/focus";
 import { StatusDot } from "@/shared/ui/status-dot";
 import { NAV_GROUPS, type NavChild, type NavItem, PREFERENCES } from "./nav-config";
 
-const ROW =
-  "flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+const ROW = cn(
+  "flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] transition-[color,box-shadow]",
+  FOCUS_RING,
+);
 const IDLE =
   "border border-transparent text-foreground/70 hover:bg-foreground/5 hover:text-foreground";
 const ACTIVE = "border border-border bg-card font-medium text-foreground shadow-xs";

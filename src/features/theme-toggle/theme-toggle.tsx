@@ -9,6 +9,7 @@
 import { MonitorIcon, MoonIcon, SunIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/shared/lib/utils";
+import { FOCUS_RING } from "@/shared/ui/focus";
 
 const ORDER = ["system", "light", "dark"] as const;
 type ThemeName = (typeof ORDER)[number];
@@ -32,9 +33,10 @@ export function ThemeToggle({ collapsed = false }: { collapsed?: boolean }) {
       onClick={() => setTheme(next)}
       aria-label={`Theme: ${LABEL[active]}. Switch to ${LABEL[next]}`}
       className={cn(
-        "flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors",
+        "flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px]",
+        "transition-[color,background-color,box-shadow]",
         "text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring",
+        FOCUS_RING,
         collapsed && "justify-center px-0",
       )}
     >
