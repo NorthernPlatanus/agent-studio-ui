@@ -41,11 +41,21 @@
   --sidebar-ring: oklch(0.708 0 0);
 
   /* Status hues — the one functional exception to "colour is out of scope"
-     (DESIGN §4). Used only by dots, badges and chips, never as surface fills. */
+     (DESIGN §4). Never surface fills; but they are not only dots and chips
+     either, and that is what the lightness is set against. The planner's log
+     sets whole sentences in them ("That planner turn failed."), so each one has
+     to clear 4.5:1 as body text on `--card`, not merely read as amber next to
+     a label.
+
+     `warn` was `oklch(0.6 …)`, which is 4.06:1 on white — the transcript's
+     warning headings and the `assumption` chip both failed AA in the light
+     theme, and warn is the hue this app uses most. 0.54 measures 5.19:1 for the
+     headings and 4.51:1 for the chip, whose own tinted background eats some of
+     the margin. Dark's values are already well clear. */
   --status-neutral: oklch(0.55 0.015 260);
   --status-progress: oklch(0.55 0.16 250);
   --status-good: oklch(0.52 0.13 155);
-  --status-warn: oklch(0.6 0.14 70);
+  --status-warn: oklch(0.54 0.14 70);
   --status-bad: oklch(0.55 0.21 27);
 }
 
@@ -137,6 +147,31 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+  }
+  /*
+    Tailwind v4's preflight dropped the `cursor: pointer` that browsers never
+    gave `<button>` in the first place, so every control in the app inherited
+    an arrow — except the handful where someone had noticed and pasted
+    `cursor-pointer` in by hand. That is why the pointer appeared on the
+    project switcher's menu items and the launch page's rows but not on Send,
+    Start session, or anything in the nav rail.
+
+    Stated once here rather than per component: it is a property of "this is
+    clickable", not of any one button. Anything that opts out (a disabled
+    control, a `<select>` item) still can, since a utility class beats a base
+    rule.
+  */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="tab"]:not([aria-disabled="true"]),
+  [role="option"]:not([aria-disabled="true"]),
+  [role="menuitem"]:not([aria-disabled="true"]),
+  [role="menuitemradio"]:not([aria-disabled="true"]),
+  [role="menuitemcheckbox"]:not([aria-disabled="true"]),
+  summary,
+  label[for],
+  a[href] {
+    cursor: pointer;
   }
   html {
     color-scheme: light;

@@ -13,6 +13,7 @@ import { CheckIcon, ChevronsUpDownIcon, FolderIcon } from "lucide-react";
 import { DropdownMenu } from "radix-ui";
 import type { Project } from "@/entities/project";
 import { cn } from "@/shared/lib/utils";
+import { FOCUS_RING } from "@/shared/ui/focus";
 import { useActiveProject } from "./use-active-project";
 
 function readiness(project: Project | undefined): string {
@@ -27,8 +28,9 @@ export function ProjectSwitcher({ collapsed = false }: { collapsed?: boolean }) 
   const trigger = (
     <DropdownMenu.Trigger
       className={cn(
-        "flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left transition-colors",
-        "hover:bg-sidebar-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring",
+        "flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left transition-[color,background-color,box-shadow]",
+        "hover:bg-sidebar-accent",
+        FOCUS_RING,
       )}
       aria-label={`Project: ${project ?? "none"}. Switch project`}
     >
@@ -71,7 +73,7 @@ export function ProjectSwitcher({ collapsed = false }: { collapsed?: boolean }) 
             <DropdownMenu.Item
               key={candidate.name}
               onSelect={() => select(candidate.name)}
-              className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-[13px] outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground"
+              className="flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px] outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground"
             >
               <CheckIcon
                 className={cn("size-3.5 shrink-0", candidate.name === project ? "" : "invisible")}

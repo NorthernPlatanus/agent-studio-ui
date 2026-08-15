@@ -13,9 +13,13 @@
 
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/shared/lib/utils";
+import { FOCUS_RING } from "@/shared/ui/focus";
 
-export const CONTROL =
-  "h-8 rounded-lg border border-border bg-card px-2.5 text-[13px] text-foreground transition-colors placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50";
+export const CONTROL = cn(
+  "h-8 rounded-lg border border-border bg-card px-2.5 text-[13px] text-foreground",
+  "transition-[color,box-shadow] placeholder:text-muted-foreground disabled:opacity-50",
+  FOCUS_RING,
+);
 
 export const CONTROL_ACTIVE = "border-foreground/25 font-medium";
 

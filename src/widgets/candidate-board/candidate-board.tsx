@@ -66,7 +66,7 @@ function CandidateCard({ candidate }: { candidate: Candidate }) {
 
         {candidate.gate_log ? (
           <details>
-            <summary className="cursor-pointer text-[12px] text-muted-foreground hover:text-foreground">
+            <summary className="text-[12px] text-muted-foreground hover:text-foreground">
               Gate log (tail)
             </summary>
             <pre className="mt-1.5 max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted/50 p-2 text-xs leading-relaxed">

@@ -42,7 +42,7 @@ export function Disclosure({
         the default triangle is a different glyph and a different size in every
         engine, and this one lines up with the nav rail's own disclosure arrows.
       */}
-      <summary className="flex min-h-7 cursor-pointer list-none items-center gap-2 rounded-md text-[11px] font-medium uppercase tracking-wider text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+      <summary className="flex min-h-7 list-none items-center gap-2 rounded-md text-[11px] font-medium uppercase tracking-wider text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 [&::-webkit-details-marker]:hidden">
         <ChevronRightIcon
           className="size-3.5 shrink-0 transition-transform duration-150 group-open:rotate-90"
           aria-hidden="true"

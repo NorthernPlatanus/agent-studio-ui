@@ -17,12 +17,16 @@ import { useLocation, useNavigate } from "react-router";
 import { describeStream } from "@/shared/lib/stream-status";
 import { cn } from "@/shared/lib/utils";
 import { useUiStore } from "@/shared/store/ui-store";
+import { FOCUS_RING } from "@/shared/ui/focus";
 import { StatusDot } from "@/shared/ui/status-dot";
 import { ActiveRunPill } from "@/widgets/active-run";
 import { routeMeta } from "./nav-config";
 
-const ICON_BUTTON =
-  "flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+const ICON_BUTTON = cn(
+  "flex size-7 items-center justify-center rounded-lg text-muted-foreground",
+  "transition-[color,background-color,box-shadow] hover:bg-foreground/5 hover:text-foreground",
+  FOCUS_RING,
+);
 
 /** The shared shape of every floating group in the bar. */
 const PILL = "flex h-8 items-center rounded-lg border border-border bg-card";

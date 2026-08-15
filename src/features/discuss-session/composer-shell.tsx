@@ -29,6 +29,7 @@
 
 import type { ReactNode } from "react";
 import { cn } from "@/shared/lib/utils";
+import { FOCUS_RING_WITHIN } from "@/shared/ui/focus";
 
 export function ComposerShell({
   value,
@@ -65,8 +66,8 @@ export function ComposerShell({
         // `focus-within` rather than `focus-visible` on the textarea: the ring
         // belongs to the whole object, or the field lights up inside a box that
         // stays inert and the two read as unrelated.
-        "rounded-lg border border-border bg-card transition-colors",
-        "focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ring",
+        "rounded-lg border border-border bg-card transition-[color,box-shadow]",
+        FOCUS_RING_WITHIN,
         disabled && "opacity-50",
         className,
       )}

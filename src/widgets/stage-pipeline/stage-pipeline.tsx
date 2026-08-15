@@ -16,6 +16,7 @@
 import { Link } from "react-router";
 import { formatInteger } from "@/shared/lib/format";
 import { cn } from "@/shared/lib/utils";
+import { FOCUS_RING } from "@/shared/ui/focus";
 import { Soon } from "@/shared/ui/soon";
 import { Chip } from "@/shared/ui/status-dot";
 
@@ -90,8 +91,11 @@ export function StagePipeline({ eventCounts }: { eventCounts: Readonly<Record<st
                 <span className="text-[12px] font-medium leading-tight">{stage.label}</span>
                 {problems.length > 0 ? (
                   <span className="mt-1 flex flex-wrap gap-1">
+                    {/* The chip is the whole target, so the ring goes on the link
+                        and matches its shape — `outline-none` alone left a
+                        keyboard user with no focus indicator at all. */}
                     {problems.map((problem) => (
-                      <Link key={problem.kind} to={`/runs`} className="focus-visible:outline-none">
+                      <Link key={problem.kind} to={`/runs`} className={cn("rounded", FOCUS_RING)}>
                         <Chip tone="warn" title={`${problem.kind} events`}>
                           {formatInteger(eventCounts[problem.kind] ?? 0)} {problem.label}
                         </Chip>
