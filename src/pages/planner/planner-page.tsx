@@ -1,42 +1,70 @@
 /**
  * The planner chat — the panel's first job (PLAN §1): hold a `discuss`
- * requirements loop, see the questions, answer, preview the specs, approve.
+ * requirements loop, see the questions, answer, read the plan, approve.
+ *
+ * **One column. The conversation is the page.**
+ *
+ *   the conversation (scrolls)
+ *   ───────────────────────────
+ *   what you do next (pinned)
+ *
+ * That is the whole layout, at every width, in every state. Everything else
+ * about the session — its status, what it assumed, what is attached, the knobs
+ * for the next turn — is behind one button in the header.
+ *
+ * This is a correction, and the thing it corrects is worth writing down because
+ * the page has now drifted into it twice. The screen kept acquiring a second
+ * column: a status panel, a standing list of assumptions, a settings grid, an
+ * attachments list, the spec proposal. Each arrived with a good local reason and
+ * the sum was a control panel with a chat in the corner — 304 to 384 pixels
+ * taken from the conversation, permanently, to hold facts that were already in
+ * it. The status panel restated the transcript's closing row. The assumptions
+ * region restated rows a few lines up. And the conversation itself had a *hole*
+ * where the plan should be, because `specs_preview` was filtered out of the log
+ * and drawn in the column instead — so the planner would say nothing at the
+ * exact moment it produced the thing you asked for.
+ *
+ * The rule that replaces all of it: **if it is already a row in the transcript,
+ * it does not get a second home on this screen.** Assumptions are rows. The
+ * status is the shape of the composer plus a chip in the header. The plan is a
+ * card in the flow (`PlannerTranscript`'s `proposal`), where the planner
+ * produced it.
+ *
+ * **The decision is pinned, not parked next to the plan.** The old arrangement
+ * put "Apply to the backlog" inside the specs panel, which was right about
+ * adjacency and wrong about reachability: the panel scrolled, and past two or
+ * three specs the irreversible button was off the bottom of a pane it could not
+ * be scrolled back into. It lives in the action zone now — the one strip on this
+ * screen that is guaranteed to be on it — directly under the plan it writes,
+ * with the consequence stated above the buttons. The specs are always the last
+ * thing in the log when a decision is pending, so it is still adjacent; it just
+ * cannot leave.
  *
  * **The screen is a frame, not a document.** It declares `height: "fill"`
  * (`nav-config.ts`), so `<main>` does not scroll and the transcript is the one
- * region that does. Everything else holds still: the header, the action zone at
- * the foot of the conversation, and the session column beside it.
- *
- * That is written down because the previous shape broke it and the break was
- * bad. The page was a `reading`-width stack inside a scrolling column, with the
- * transcript faking containment via `max-h-[58vh]` — a viewport unit in a
- * codebase whose whole responsive story is container queries, because there was
- * nothing to be a percentage *of*. The costs were all downstream of that one
- * workaround: two scrollbars, a tail-follow that drove the one you were not
- * looking at, and — measured on a 1440×900 window with eleven frames and two
- * specs on screen — the composer at y1063 and "Apply to the backlog" at y1014.
- * The irreversible action on the screen was below the fold with nothing to
- * suggest it existed, and it moved *further* away each time the planner
- * proposed something.
- *
- * The layout now says what the screen is:
- *
- *   conversation (scrolls) + its action zone (pinned)  |  the session (still)
- *
- * The second column is not the shared activity rail — that stays shut here. It
- * is this session's own context, in the order attention reaches for it: what the
- * loop is doing, what it decided without asking, what it is proposing, and the
- * knobs that shaped all three. `DESIGN.md` §3.1's two widths did not cover a
- * screen that is watched for ten minutes rather than read once; §6 records the
- * amendment.
+ * region that does. The header and the action zone hold still. The previous
+ * shape faked containment with `max-h-[58vh]` — a viewport unit in a codebase
+ * whose responsive story is container queries — which bought two scrollbars, a
+ * tail-follow that drove the one you were not looking at, and a composer that
+ * drifted below the fold as the conversation grew.
  *
  * Live frames arrive on the session's own SSE stream, which appends into the
  * query cache. That is the documented exception to "the stream invalidates, it
  * does not store": the transcript is append-only with a server-assigned `seq`,
  * exactly like the event log.
+ *
+ * **A conversation outlives the process that ran it.** Sessions are held in
+ * memory by `api.discuss.DiscussManager` and always will be — the loop is an
+ * awaited coroutine holding a provider subprocess. Restarting the API used to
+ * blank this screen to a start form: the reading was gone along with the loop,
+ * which is the wrong half to lose. The API now persists the frame log
+ * (`store.save_discussion_log`) and rebuilds a read-only session from it, so a
+ * restart costs the turn and not the transcript. `PersistedTranscript` below is
+ * what remains for stores written before that.
  */
 
 import { useQueryClient } from "@tanstack/react-query";
+import { SlidersHorizontalIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   assumptions,
@@ -77,6 +105,7 @@ import { FilePath } from "@/shared/ui/file-path";
 import { Panel, PanelBody, PanelFooter, PanelHeader } from "@/shared/ui/panel";
 import { Region } from "@/shared/ui/region";
 import { Screen } from "@/shared/ui/screen";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/shared/ui/sheet";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { StatusChip } from "@/shared/ui/status-dot";
 import {
@@ -88,16 +117,20 @@ import {
 } from "@/widgets/planner-chat";
 
 /**
- * What `run_discuss` wrote to the store on a previous session.
+ * The flattened transcript, for a store written before frame logs existed.
  *
- * The only thing that survives an API restart, and therefore the only history
- * this page can show when the manager has no session in memory. Plain text, not
- * frames — it is the terminal transcript, so it gets the log treatment rather
- * than being dressed up as a conversation it can no longer become.
+ * The server sends this **only** when it has no session to give — with a frame
+ * log present it returns the conversation properly and leaves this empty, so
+ * the two can never appear together. That pairing was the bug: the same
+ * exchange rendered once as a chat and once as a `ROLE: text` dump beside it.
+ *
+ * Plain text, so it gets the log treatment rather than being dressed up as a
+ * conversation it can no longer become — and folded, because it is the one
+ * thing on an otherwise-empty screen that must not outweigh the composer.
  */
 function PersistedTranscript({ text }: { text: string }) {
   return (
-    <Disclosure title="Earlier conversation" meta="persisted transcript, from before a restart">
+    <Disclosure title="Earlier conversation" meta="from before this store kept frames">
       <pre className="max-h-72 overflow-auto rounded-lg border border-border bg-background/50 px-3 py-2 font-mono text-[11px] leading-relaxed text-muted-foreground">
         {text}
       </pre>
@@ -119,10 +152,14 @@ export function PlannerPage() {
   const removePin = useRemovePin(project, sessionId);
   const close = useCloseDiscuss(project, sessionId);
 
-  // Lifted out of the composer because the two halves of the decision live in
-  // different columns: the buttons sit with the specs, the revise box sits in
-  // the action zone.
+  // Lifted out of the composer because the decision has two halves in two
+  // places: the buttons and the revise box swap for one another in the action
+  // zone, and the specs panel's own copy of the state decides what its note says.
   const [revising, setRevising] = useState(false);
+
+  // Everything about the session that is not the conversation — see
+  // `sessionSheet`.
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   // One subscription per live session. Re-opened only when the session id
   // changes — not on every frame — because the stream itself is what mutates the
@@ -209,29 +246,35 @@ export function PlannerPage() {
       runnableDetail={detail?.runnable_detail}
       pending={start.isPending}
       error={start.error}
-      {...(session === null
-        ? {
-            // Only on the screen where this form *is* the screen. In the
-            // footer of a finished conversation it would be a third row of
-            // metadata under a transcript that already carries all of it.
-            context: (
-              <p className="flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-[12px] text-muted-foreground">
-                <span className="font-mono text-[11px] text-foreground">
-                  {options.configured_model}
-                </span>
-                <span aria-hidden="true">·</span>
-                <span className="font-mono text-[11px]">{options.configured_provider}</span>
-                {detail?.repo_path ? (
-                  <>
-                    <span aria-hidden="true">·</span>
-                    <span>reads</span>
-                    <FilePath path={detail.repo_path} />
-                  </>
-                ) : null}
-              </p>
-            ),
-          }
-        : {})}
+      context={
+        // What the session will run as, and what it reads — the only question an
+        // operator has before pressing the button.
+        //
+        // **Set as two ends of one row, not a left-packed list.** All five values
+        // used to run left-to-right off the composer's left edge under a
+        // 38rem-wide box, which left a third of the row empty and made the whole
+        // block read as leaning. They are also two different kinds of fact: one
+        // is where the tokens are spent, the other is what they are spent
+        // reading. The row now says so — the checkout at the left margin, the
+        // spend at the right, each aligned to the edge of the field above it.
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-1 text-[12px] text-muted-foreground">
+          {detail?.repo_path ? (
+            <span className="flex min-w-0 items-center gap-1.5">
+              <span className="shrink-0">reads</span>
+              <FilePath path={detail.repo_path} />
+            </span>
+          ) : (
+            <span />
+          )}
+          <span className="flex shrink-0 items-center gap-1.5 font-mono text-[11px]">
+            <span className="text-foreground">{options.configured_model}</span>
+            <span aria-hidden="true">·</span>
+            <span>{options.configured_effort ?? "default"} effort</span>
+            <span aria-hidden="true">·</span>
+            <span>{options.configured_provider}</span>
+          </span>
+        </div>
+      }
       onStart={(request, confirm, uploads) =>
         start.mutate({ request, confirm, settings: {} as DiscussSettings, uploads })
       }
@@ -244,15 +287,13 @@ export function PlannerPage() {
   // nothing, with a "Planner" header duplicating the location chip above it.
   //
   // **Bottom-aligned, and that is the whole point of it.** Once a session
-  // exists the composer is pinned to the foot of the panel, which the layout
-  // fixes and which is right. Starting one from a composer at the top therefore
-  // moved everything as far as it could possibly move: measured at 1400×900,
-  // the sentence the operator had just typed fell 526px on submit and the box
-  // they typed it into was replaced by a differently-shaped strip 600px further
-  // down, while a border, a header and a 22rem column appeared around it. Put
-  // the empty composer where the real one lives and the same submit reads as
-  // the frame growing upward around what was written. The order matches for the
-  // same reason: history above, the thing you type below, in both states.
+  // exists the composer is pinned to the foot of the panel. Starting one from a
+  // composer at the top therefore moved everything as far as it could possibly
+  // move: measured at 1400×900, the sentence the operator had just typed fell
+  // 526px on submit and the box they typed it into was replaced by a
+  // differently-shaped strip 600px further down. Put the empty composer where
+  // the real one lives and the same submit reads as the frame growing upward
+  // around what was written.
   if (session === null) {
     return (
       <Screen fill>
@@ -267,6 +308,162 @@ export function PlannerPage() {
     );
   }
 
+  /*
+    The plan, rendered inside the conversation at the point it was produced.
+
+    `fill` is deliberately off: the panel is in a scrolling log now, not a
+    fixed-height column, so it has no slack to take and nothing to scroll
+    internally. Its length is the log's length, which is the one place on this
+    screen where length is free.
+
+    No `footer` either. The decision moved to the action zone — see the file
+    header for why adjacency lost to reachability.
+  */
+  const proposal =
+    specs.length === 0 ? null : (
+      <SpecArtifacts
+        specs={specs}
+        title={applied ? "Applied specs" : "Proposed specs"}
+        note={
+          applied ? (
+            <Banner tone="good">
+              Written to the backlog. They appear in Tasks as{" "}
+              <span className="font-mono text-xs">ready</span> — or{" "}
+              <span className="font-mono text-xs">human_only</span> where the planner marked them
+              so.
+            </Banner>
+          ) : deciding && !revising ? (
+            <p className="text-[13px] text-muted-foreground">
+              Nothing has been written yet. The decision is below the conversation.
+            </p>
+          ) : deciding ? (
+            // Revising. What is true here is that this list is about to be
+            // replaced by whatever is being typed, which is more useful than a
+            // warning about a button that is not currently on the screen.
+            <p className="text-[13px] text-muted-foreground">
+              Still nothing written. What you send next is a revision — the planner replaces this
+              proposal with it rather than applying it.
+            </p>
+          ) : live ? (
+            // A revise round is in flight. The newest preview is the one the
+            // planner is currently replacing, and saying so is the difference
+            // between "stale" and "wrong".
+            <p className="text-[13px] text-muted-foreground">
+              The proposal from the last round. The planner is working on a revision, which replaces
+              it — nothing has been written.
+            </p>
+          ) : (
+            <p className="text-[13px] text-muted-foreground">
+              Proposed, never approved — this conversation ended without writing them.
+            </p>
+          )
+        }
+      />
+    );
+
+  /*
+    ─── the sheet ────────────────────────────────────────────────────────────
+
+    Everything about the session that is not the conversation. One button, one
+    surface, and nothing on the screen behind it moves when it opens.
+
+    What is in here is in here because the alternative is a standing column, and
+    a standing column is what this page keeps regressing into. Each of these is
+    real and none of them is what the operator is doing:
+
+      status        the chip in the header is the glanceable half; the clock and
+                    the session id are the half you only want when something has
+                    gone strange
+      assumptions   already inline as rows — collected here because an
+                    unchallenged assumption becomes a spec, so it is worth being
+                    able to read the set of them without scrolling the log
+      attachments   what this conversation was given
+      settings      what the *next* turn will run as
+
+    Settings and attachments used to be a `<details>` at the foot of the session
+    column, and opening it was the worst interaction on this screen: the column
+    was a fixed-height frame whose specs panel took the slack, so unfolding a
+    file list collapsed the proposal being decided to a header and a footer with
+    nothing between them. A sheet has room by construction and takes nothing
+    from anything.
+  */
+  const sessionSheet = (
+    <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+      <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
+        <SheetHeader className="shrink-0 gap-1 border-b border-border pr-12">
+          <SheetTitle className="text-sm">Session</SheetTitle>
+          <SheetDescription className="text-[12px]">
+            {live
+              ? "Attachments and settings apply from the next planner turn."
+              : "This session has ended — everything here is read-only."}
+          </SheetDescription>
+        </SheetHeader>
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
+          <dl className="space-y-1 text-[12px]">
+            <div className="flex gap-2">
+              <dt className="w-20 shrink-0 text-muted-foreground">Started</dt>
+              <dd>
+                {formatClock(session.started_at)}
+                {running ? ` · ${formatDuration(now - session.started_at)} elapsed` : null}
+              </dd>
+            </div>
+            <div className="flex gap-2">
+              <dt className="w-20 shrink-0 text-muted-foreground">Id</dt>
+              {/* Developer-facing, so it is here rather than in the header
+                  where it used to sit as the panel's only `meta` — displacing
+                  the one fact an operator reads at a glance, which is whether
+                  the loop is waiting on them. */}
+              <dd className="min-w-0 break-all font-mono text-[11px]">{session.session_id}</dd>
+            </div>
+          </dl>
+
+          {stated.length === 0 ? null : (
+            <Region title="Assumptions" meta={`${stated.length} · decided rather than asked`}>
+              <ul className="space-y-1 text-[13px]">
+                {stated.map((text) => (
+                  <li key={text} className="flex gap-2">
+                    <span className="text-status-warn" aria-hidden="true">
+                      •
+                    </span>
+                    <span className="min-w-0 text-muted-foreground">{text}</span>
+                  </li>
+                ))}
+              </ul>
+            </Region>
+          )}
+
+          {/* Only if something was attached, or there is still a turn to attach
+              for. An attachments list reading "none" on a loop that has stopped
+              reading is a control explaining an absence. */}
+          {live || session.pins.length > 0 ? (
+            <DiscussPins
+              pins={session.pins}
+              disabled={!live}
+              pending={uploadPin.isPending || removePin.isPending}
+              error={uploadPin.error ?? removePin.error}
+              maxBytes={options.max_pin_bytes}
+              onUpload={(uploads) => uploadPin.mutate(uploads)}
+              onRemove={(path) => removePin.mutate(path)}
+            />
+          ) : null}
+
+          {/* Only while there is a turn left for them to affect. A disabled copy
+              of this grid is six controls explaining how they would have steered
+              a loop that has stopped. */}
+          {live ? (
+            <DiscussSettingsPanel
+              settings={session.settings}
+              options={options}
+              disabled={false}
+              pending={settings.isPending}
+              onApply={(next) => settings.mutate(next)}
+            />
+          ) : null}
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+
   return (
     <Screen fill>
       {/*
@@ -280,251 +477,134 @@ export function PlannerPage() {
       />
 
       {/*
-        Two frames side by side is a wide-container layout, and only that. Stack
-        them and there is no longer enough height to go round: the conversation
-        and the session column both want the slack, and at 812px the chat
-        collapsed to its border while the session pane took the screen. So below
-        `@4xl` this reverts to what it always should have been at that size — a
-        document. The wrapper scrolls, the chat keeps a readable floor, and the
-        session column flows underneath it.
+        The fade is for the *first* mount only, which is the frame where a
+        session starts. Bottom-aligning the start composer got the geometry
+        right — the field moves 51px on submit instead of 526 — but the border
+        and its header still arrive out of nothing in that same commit.
+        Appearing over 200ms reads as appearing; appearing in one frame reads as
+        the page being replaced. Nothing moves, only opacity.
       */}
-      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto @4xl:flex-row @4xl:overflow-visible">
+      <Panel fill className="animate-in fade-in duration-200 motion-reduce:animate-none">
         {/*
-          ─── the conversation ─────────────────────────────────────────────
-
-          The fade is for the *first* mount only, which is the frame where a
-          session starts. Bottom-aligning the start composer got the geometry
-          right — the field moves 51px on submit instead of 526 — but three
-          things still arrive out of nothing in that same commit: this border,
-          its header, and the session column. Appearing over 200ms reads as
-          appearing; appearing in one frame reads as the page being replaced.
-          Nothing moves, only opacity: motion on a control panel is a cost, and
-          this is the smallest thing that removes the blink.
+          The header's `meta` is the session's state in three words, because
+          that is the one thing about a planner session that is worth a
+          permanent, unscrollable slot: whether it is your turn. It replaces a
+          19rem column that said the same thing in a bordered panel with a
+          heading over it.
         */}
-        <Panel
-          fill
-          className="min-h-[26rem] min-w-0 flex-1 animate-in fade-in duration-200 motion-reduce:animate-none @4xl:min-h-0"
-        >
-          {/* The panel's `meta` is the session id and nothing else — the old
-              "requirements loop" was a caption on a screen the location chip
-              already names `Planner` (`DESIGN.md` §1.3). */}
-          <PanelHeader
-            title="Planner"
-            meta={<span className="font-mono text-xs">{session.session_id}</span>}
+        <PanelHeader
+          title="Planner"
+          meta={
+            <span className="flex items-center gap-2">
+              <StatusChip tone={sessionTone(session.status)}>{describeSession(session)}</StatusChip>
+              {running ? (
+                <span className="tabular-nums">{formatDuration(now - session.started_at)}</span>
+              ) : null}
+            </span>
+          }
+          actions={
+            <>
+              <Button
+                size="xs"
+                variant="ghost"
+                aria-haspopup="dialog"
+                aria-expanded={sheetOpen}
+                onClick={() => setSheetOpen(true)}
+              >
+                <SlidersHorizontalIcon aria-hidden="true" />
+                Session
+              </Button>
+              {/* Only while there is something to close. On an ended session
+                  this was a button whose whole effect had already happened. */}
+              {live ? (
+                <Button
+                  size="xs"
+                  variant="ghost"
+                  onClick={() => close.mutate()}
+                  disabled={close.isPending}
+                >
+                  Close
+                </Button>
+              ) : null}
+            </>
+          }
+        />
+
+        {/*
+          A terminal failure sets `session.error` *and* usually emits an `error`
+          frame carrying the same sentence. Two statements of it earn their
+          place — the log's own closing row, in reading order at the bottom
+          where the eye already is, and the chip in the header, which is
+          unscrollable. A third as a pinned banner cost the conversation a
+          measured 59px permanently to restate at the top something whose
+          content is at the bottom. The case it existed for — an error the frame
+          log never carried — goes to `trailingError` instead.
+        */}
+        <PanelBody scroll flush className="px-3 py-3">
+          <PlannerTranscript
+            session={session}
+            trailingError={session.error && !errorEchoed ? session.error : null}
+            proposal={proposal}
+            className="h-full"
           />
+        </PanelBody>
 
-          <>
-            {/*
-              A terminal failure sets `session.error` *and* emits an `error`
-              frame carrying the same sentence, so the panel was saying it
-              three times: pinned here, as the last row of the conversation,
-              and as the `Failed` chip in the session column. Two of those
-              earn their place — the row is where the story ends, in reading
-              order at the bottom where the eye already is, and the chip is
-              unscrollable. This banner was the third, at the top of a panel
-              whose content is at the bottom. It stays only for the case the
-              row cannot cover: an error the frame log never carried.
-            */}
-            {session.error && !errorEchoed ? (
-              <div className="shrink-0 px-5 pt-4">
-                <Banner tone="bad">{session.error}</Banner>
-              </div>
-            ) : null}
+        {/*
+          ─── the action zone ────────────────────────────────────────────────
 
-            <PanelBody scroll flush className="px-3 py-3">
-              <PlannerTranscript session={session} className="h-full" />
-            </PanelBody>
-
-            {/*
-                The action zone: whatever "acting" means in this state — the
-                pending question's answer box, the retry, the revise note, or the
-                form that opens a new session. It is pinned, so it cannot drift
-                below the fold as the conversation grows. The one state with
-                nothing here is the spec decision, which is deliberate: those
-                buttons belong to the specs panel beside this one, under the
-                banner that states what they do.
-              */}
-            {live ? (
-              deciding && !revising ? null : (
-                <PanelFooter>
-                  <DiscussComposer
-                    expects={waiting}
-                    disabled={busy}
-                    revising={revising}
-                    onRevisingChange={setRevising}
-                    onSend={(text) => reply.mutate(text)}
-                    labelledBy={pending ? questionLabelId(pending.seq) : undefined}
-                  />
-                  {reply.error instanceof ApiError ? (
-                    <Banner tone="bad" className="mt-3">
-                      {typeof reply.error.detail === "string"
-                        ? reply.error.detail
-                        : "That reply was not accepted."}
-                    </Banner>
-                  ) : null}
-                </PanelFooter>
-              )
-            ) : (
-              <PanelFooter className="max-h-[55%] overflow-y-auto">{startForm}</PanelFooter>
-            )}
-          </>
-        </Panel>
-
-        {/* ─── the session ──────────────────────────────────────────────── */}
-        {
-          // The column is a frame too, for the same reason the page is: the specs
-          // panel takes the slack and scrolls its own list, so the button that
-          // writes to the store is pinned no matter how many specs are proposed.
-          // Letting the whole column scroll instead just moves the off-screen
-          // approve button from the bottom of the page to the bottom of the pane.
-          <aside
-            aria-label="Session"
-            className="flex w-full shrink-0 flex-col gap-3 animate-in fade-in duration-200 motion-reduce:animate-none @4xl:min-h-0 @4xl:w-[22rem] @6xl:w-96"
-          >
-            <Panel className="shrink-0">
-              <PanelHeader
-                title="Session"
-                actions={
-                  live ? (
-                    <Button
-                      size="xs"
-                      variant="ghost"
-                      onClick={() => close.mutate()}
-                      disabled={close.isPending}
-                    >
-                      Close
-                    </Button>
-                  ) : null
-                }
+          Whatever "acting" means in this state: the pending question's answer
+          box, the retry, the decision on a plan, the revise note, or the form
+          that opens a new session. Pinned, so it cannot drift below the fold as
+          the conversation grows — which is the property the decision bar was
+          moved here to get.
+        */}
+        {live ? (
+          deciding && !revising ? (
+            <PanelFooter className="space-y-2.5">
+              <Banner tone="warn">
+                Nothing has been written yet. Approving upserts every spec in the proposal above
+                into the store.
+              </Banner>
+              <DiscussDecision
+                disabled={busy}
+                onApply={() => reply.mutate("y")}
+                onRevise={() => setRevising(true)}
+                onDiscard={() => reply.mutate("abort")}
               />
-              <PanelBody className="space-y-2">
-                <StatusChip tone={sessionTone(session.status)}>
-                  {describeSession(session)}
-                </StatusChip>
-                <p className="text-[12px] text-muted-foreground">
-                  Started {formatClock(session.started_at)}
-                  {running ? ` · ${formatDuration(now - session.started_at)} elapsed` : null}
-                </p>
-              </PanelBody>
-            </Panel>
-
-            {/*
-              Open, not folded. An unchallenged assumption becomes a spec, and
-              these were previously below the fold behind a `<details>` — which
-              is the one place on this screen where "subordinate" was the wrong
-              call.
-            */}
-            {stated.length > 0 ? (
-              <Region
-                title="Assumptions"
-                meta={`${stated.length} · decided rather than asked`}
-                // Capped rather than allowed to grow: a long list must not be
-                // what pushes the proposal out of the pane. Uncapped when there
-                // is no proposal, since then it is the pane's main content.
-                className={
-                  specs.length > 0
-                    ? "max-h-44 shrink-0 overflow-y-auto"
-                    : "min-h-0 flex-1 overflow-y-auto"
-                }
-              >
-                <ul className="space-y-1 text-[13px]">
-                  {stated.map((text) => (
-                    <li key={text} className="flex gap-2">
-                      <span className="text-status-warn" aria-hidden="true">
-                        •
-                      </span>
-                      <span className="text-muted-foreground">{text}</span>
-                    </li>
-                  ))}
-                </ul>
-              </Region>
-            ) : null}
-
-            {specs.length > 0 ? (
-              <SpecArtifacts
-                fill
-                specs={specs}
-                title={applied ? "Applied specs" : "Proposed specs"}
-                note={
-                  applied ? (
-                    <Banner tone="good">
-                      Written to the backlog. They appear in Tasks as{" "}
-                      <span className="font-mono text-xs">ready</span> — or{" "}
-                      <span className="font-mono text-xs">human_only</span> where the planner marked
-                      them so.
-                    </Banner>
-                  ) : deciding ? (
-                    <Banner tone="warn">
-                      Nothing has been written yet. Approving upserts every spec below into the
-                      store.
-                    </Banner>
-                  ) : live ? (
-                    // A revise round is in flight. The newest preview is the one
-                    // the planner is currently replacing, and saying so is the
-                    // difference between "stale" and "wrong".
-                    <p className="text-[13px] text-muted-foreground">
-                      The proposal from the last round. The planner is working on a revision, which
-                      replaces it — nothing has been written.
-                    </p>
-                  ) : (
-                    <p className="text-[13px] text-muted-foreground">
-                      Proposed, never approved — this conversation ended without writing them.
-                    </p>
-                  )
-                }
-                footer={
-                  deciding && !revising ? (
-                    <DiscussDecision
-                      disabled={busy}
-                      onApply={() => reply.mutate("y")}
-                      onRevise={() => setRevising(true)}
-                      onDiscard={() => reply.mutate("abort")}
-                    />
-                  ) : null
-                }
+            </PanelFooter>
+          ) : (
+            <PanelFooter>
+              <DiscussComposer
+                expects={waiting}
+                disabled={busy}
+                revising={revising}
+                onRevisingChange={setRevising}
+                onSend={(text) => reply.mutate(text)}
+                labelledBy={pending ? questionLabelId(pending.seq) : undefined}
               />
-            ) : null}
+              {reply.error instanceof ApiError ? (
+                <Banner tone="bad" className="mt-3">
+                  {typeof reply.error.detail === "string"
+                    ? reply.error.detail
+                    : "That reply was not accepted."}
+                </Banner>
+              ) : null}
+            </PanelFooter>
+          )
+        ) : (
+          // Capped at 40%, not 55%. The start form is the tallest thing this
+          // action zone ever holds — heading, field, two control rows and the
+          // context line — and at 55% it was entitled to more than half the
+          // panel on a screen whose subject is the conversation above it.
+          // Measured on an 820px panel it wants 196px, so 40% (328px) is slack
+          // rather than a squeeze at any ordinary height; below that it scrolls
+          // itself, and the conversation keeps the majority of the frame at
+          // every size.
+          <PanelFooter className="max-h-[40%] overflow-y-auto">{startForm}</PanelFooter>
+        )}
+      </Panel>
 
-            {/*
-              Bounded rather than free-growing: folded these are two 28px rows,
-              but "Session setup" opens onto a file list and a settings grid, and
-              in a column that does not scroll that would push the proposal out
-              of view. Capped, it scrolls itself and leaves the rest alone.
-            */}
-            <div className="max-h-[45%] shrink-0 space-y-3 overflow-y-auto">
-              <Disclosure
-                title="Session setup"
-                meta={
-                  live
-                    ? `${session.pins.length} attached · settings apply from the next turn`
-                    : `${session.pins.length} attached · locked, this session has ended`
-                }
-              >
-                <div className="space-y-3">
-                  <DiscussPins
-                    pins={session.pins}
-                    disabled={!live}
-                    pending={uploadPin.isPending || removePin.isPending}
-                    error={uploadPin.error ?? removePin.error}
-                    maxBytes={options.max_pin_bytes}
-                    onUpload={(uploads) => uploadPin.mutate(uploads)}
-                    onRemove={(path) => removePin.mutate(path)}
-                  />
-                  <DiscussSettingsPanel
-                    settings={session.settings}
-                    options={options}
-                    disabled={!live}
-                    pending={settings.isPending}
-                    onApply={(next) => settings.mutate(next)}
-                  />
-                </div>
-              </Disclosure>
-
-              {persisted === "" ? null : <PersistedTranscript text={persisted} />}
-            </div>
-          </aside>
-        }
-      </div>
+      {sessionSheet}
     </Screen>
   );
 }

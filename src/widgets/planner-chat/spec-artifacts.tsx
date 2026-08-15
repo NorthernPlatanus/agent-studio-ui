@@ -1,20 +1,21 @@
 /**
  * The proposal on the table: what would be written to the backlog if approved.
  *
- * This is the artifact the whole conversation exists to produce, so it is not a
- * line in the transcript — it is a panel that stays put while the chat scrolls,
- * with the approve/edit/abort bar attached to it rather than to the composer.
- * The decision is about *these specs*, and the control belongs next to what it
- * acts on (`DESIGN.md` §3.4, tier 2: computed feedback sits adjacent to the
- * inputs that produce it).
+ * This is the artifact the whole conversation exists to produce, and it is
+ * rendered **inside** that conversation — as a card in the log, at the turn the
+ * planner produced it (`PlannerTranscript`'s `proposal`).
  *
- * That was the intent from the start and the code did not honour it: the panel
- * took an `actions` prop no caller ever passed, while the real decision bar sat
- * in the composer, outside this panel's border and — once a session had a few
- * turns on it — off the bottom of a 900px window. So the warning that said
- * "approving upserts every spec below" was adjacent to nothing, and the
- * irreversible click was somewhere you had to go looking for it. `footer` is
- * that prop made real, rendered under the specs it decides.
+ * It used to be a panel in a standing column to the right of the chat, with the
+ * approve/revise/discard bar in its own footer. The adjacency argument for that
+ * is real (`DESIGN.md` §3.4, tier 2) and it lost to a plainer one: the panel
+ * scrolled, so past two or three specs the irreversible button was off the
+ * bottom of a pane, and the column it lived in was suppressed entirely below
+ * `@3xl`. A control that is sometimes not on the screen is worse than a control
+ * one line further away. The decision is pinned in the page's action zone now,
+ * which the specs always sit directly above.
+ *
+ * `footer` survives for anything that genuinely belongs under the list and
+ * inside this border. Nothing currently uses it.
  *
  * What is shown per spec is chosen for the question an operator is actually
  * answering — "is this safe to hand to an agent?":
@@ -103,7 +104,7 @@ function SpecCard({ spec }: { spec: ProposedSpec }) {
 
       {reads.length > 0 ? (
         <details className="text-[12px]">
-          <summary className="cursor-pointer text-muted-foreground">
+          <summary className="text-muted-foreground">
             reads {formatInteger(reads.length)} file{reads.length === 1 ? "" : "s"}
           </summary>
           <div className="mt-1 space-y-0.5">
@@ -122,20 +123,13 @@ export function SpecArtifacts({
   title = "Proposed specs",
   footer,
   note,
-  fill = false,
 }: {
   specs: readonly ProposedSpec[];
   title?: string;
-  /** The decision bar. Rendered under the list, inside this panel's border. */
+  /** Anything that belongs under the list and inside this panel's border. Not
+   *  the decision bar — see below. */
   footer?: React.ReactNode;
   note?: React.ReactNode;
-  /**
-   * Take the column's slack and scroll the list internally, so the footer stays
-   * pinned. Without it a proposal of more than two or three specs pushes its own
-   * approve button off the bottom of the pane — the same defect as before, moved
-   * eight inches to the right.
-   */
-  fill?: boolean;
 }) {
   const attempts = specs.reduce(
     (sum, spec) => sum + (typeof spec.n_candidates === "number" ? spec.n_candidates : 1),
@@ -143,12 +137,12 @@ export function SpecArtifacts({
   );
 
   return (
-    <Panel fill={fill}>
+    <Panel>
       <PanelHeader
         title={title}
         meta={`${formatInteger(specs.length)} task${specs.length === 1 ? "" : "s"} · ${formatInteger(attempts)} candidate attempt${attempts === 1 ? "" : "s"} if run`}
       />
-      <PanelBody scroll={fill} className="space-y-3">
+      <PanelBody className="space-y-3">
         {note}
         <ul className="space-y-2">
           {specs.map((spec, index) => (

@@ -1,27 +1,41 @@
 /**
  * The conversation, as a **log** rather than a chat app.
  *
- * Deliberately not speech bubbles. This is a control panel, and the operator is
- * reading a machine-generated planning trace where the interesting rows are the
- * questions and the assumptions, not the pleasantries — a Tier-3 region with a
- * labelled gutter (`YOU` / `PLANNER`) matches the event log two screens over and
- * lets the eye skip to the row types that matter. `DESIGN.md`'s rejection of the
- * generic shell applies double here: a messenger UI is exactly what this would
- * have become by default.
+ * This is a control panel, and the operator is reading a machine-generated
+ * planning trace where the interesting rows are the questions and the
+ * assumptions, not the pleasantries — a Tier-3 region with a labelled gutter
+ * (`YOU` / `PLANNER`) matches the event log two screens over and lets the eye
+ * skip to the row types that matter. `DESIGN.md`'s rejection of the generic
+ * shell applies double here: a messenger UI is what this would have become by
+ * default, and most of what that would have brought — bubbles with tails,
+ * avatars, read state, a name on every row — is still absent on purpose. What it
+ * borrows is the two things that carry information about *who is speaking*:
+ * a tint, and a side.
  *
  * The frames are also not a two-party dialogue. Half of them — `assumption`,
  * `note`, `limit_paused`, `turn_failed`, `applied`, `aborted` — are loop events
- * with no speaker, and an alternating left/right axis would have to invent one
- * for each of them while destroying the scan column that makes a lone
- * `assumption` findable in forty rows.
+ * with no speaker, and an *alternating* axis would have to invent one for each
+ * of them.
  *
- * Exactly one thing is taken from the messenger references, because it solves a
- * real problem the log had: **the operator's own turns sit on a surface**
- * (`Line surface`). Scrolling back through a long session to find what you last
- * told the planner, a `you` row differed from a `question` row by one gutter
- * word and a font weight — nothing the eye catches in motion. A tint is caught.
- * It is still a full-width row with the same gutter and the same timestamp; the
- * bubble is what was left behind.
+ * **What the operator's own turns get instead is the right edge** (`Line mine`).
+ * Not an alternating layout: there are two positions here, not two speakers —
+ * everything the machine produced stays in one column on the left, whatever kind
+ * of frame it is, and only `you` moves. So the scan column survives intact,
+ * which is the thing that makes a lone `assumption` findable in forty rows, and
+ * the one row type that is genuinely a different *voice* rather than a different
+ * *kind* is told apart by position before it is read at all.
+ *
+ * This is a reversal of what this file used to say, and the reason is the shape
+ * of a real conversation rather than a principle. A planner turn is a paragraph
+ * and an answer is usually a sentence, so with everything left-aligned and
+ * full-width the panel was a single ragged column with a great deal of unused
+ * space to the right of it and no rhythm to the exchange. The mirrored row uses
+ * that space and makes the alternation legible at a glance.
+ *
+ * The surface stays with it (`Line surface`), because it solves the other half:
+ * scrolling back through a long session, a `you` row differed from a `question`
+ * row by one gutter word and a font weight — nothing the eye catches in motion.
+ * Position and tint are both caught.
  *
  * Frame kinds each get a shape, because they are genuinely different things:
  *
@@ -42,7 +56,9 @@
  *   limit_paused  the subscription window ran out mid-session and the loop is
  *                 waiting for it to reset. It resumes on its own — the row says
  *                 when, so the operator can leave.
- *   specs_preview rendered by the artifacts panel, summarised here as a marker
+ *   specs_preview the plan itself, as a card in the flow (see `proposal`). Only
+ *                 the newest one: a revise round replaces the plan, so the
+ *                 earlier ones are one-line markers.
  *   applied/aborted/error/closed  terminal
  */
 
@@ -57,26 +73,94 @@ import { useEffect, useRef } from "react";
 import type { DiscussFrame, DiscussSession } from "@/entities/discuss";
 import { formatClock } from "@/shared/lib/format";
 import { cn } from "@/shared/lib/utils";
+import { FOCUS_RING } from "@/shared/ui/focus";
 import { Chip } from "@/shared/ui/status-dot";
 
-/** Frames the artifacts panel owns; the transcript only marks that they happened.
- *  `progress` is here for a different reason — it belongs to the live row. */
-const RENDERED_ELSEWHERE = new Set(["specs_preview", "awaiting", "closed", "progress"]);
+/** Frames that are state changes rather than things said. `awaiting` and `closed`
+ *  are already visible as the composer's shape and the status chip; `progress`
+ *  belongs to the live row.
+ *
+ *  `specs_preview` used to be in here, and taking it out is the point of the
+ *  `proposal` slot below: the plan is the thing the conversation exists to
+ *  produce, and it was rendered in a column beside the chat while the chat had a
+ *  hole where the planner said "here is the plan". */
+const RENDERED_ELSEWHERE = new Set(["awaiting", "closed", "progress"]);
 
 /** The DOM id of a question's text, so the action zone can be labelled by it. */
 export function questionLabelId(seq: number): string {
   return `planner-question-${seq}`;
 }
 
-function Gutter({ label, tone }: { label: string; tone?: "you" | "planner" | undefined }) {
+/**
+ * `overflow-wrap: anywhere`, and the distinction from `break-words` is the whole
+ * bug this file used to have.
+ *
+ * Half the text on this screen is machine output — a `turn_failed` row carries
+ * the CLI's stderr, which is a 900-character JSON blob with no spaces in it. Both
+ * values break such a run mid-token when it would otherwise overflow, but only
+ * `anywhere` also reduces the element's **min-content width**. `break-word`
+ * leaves it at the length of the longest unbreakable run, so every flex ancestor
+ * sized itself to that: the row grew to 1082px inside a 557px column, the log
+ * gained a horizontal scrollbar it should never have, and the stderr printed
+ * straight over the timestamp in the gutter to its right.
+ *
+ * Paired with `min-w-0` on the flex wrappers below, for the same reason in the
+ * other direction: a flex item defaults to `min-width: auto`, which refuses to
+ * shrink past min-content no matter what the wrapping rule says.
+ */
+const WRAP_ANYWHERE = "whitespace-pre-wrap [overflow-wrap:anywhere]";
+
+/**
+ * The scan column: who spoke, and how bad it was.
+ *
+ * **The severity glyph lives in here, not in front of the message.** It began as
+ * the first child of a flex wrapper inside the text, which shifted that row's
+ * text right by the width of an icon — so an `assumption` and the `question`
+ * under it started at different places and the log had no left edge to read
+ * down. Reserving a separate icon column fixed the *mutual* alignment and left
+ * the other half of the problem: a second fixed column, empty on the rows that
+ * carry no icon, holding every machine message 26px off its own gutter.
+ *
+ * One column does both jobs. The text now starts at the same offset on every
+ * row, icon or no icon, and the glyph still sits immediately to its left where
+ * it is read as belonging to that message.
+ *
+ * The width is what the content needs — "Planner" is 51px at this size, plus a
+ * gap and a 14px glyph — rather than a round number. It was `w-16` with nothing
+ * in it, which is fine against 900px of panel and is a fifth of the width at
+ * 300, where the text beside it wrapped every four words.
+ */
+function Gutter({
+  label,
+  tone,
+  icon,
+  mirrored = false,
+}: {
+  label: string;
+  tone?: "you" | "planner" | undefined;
+  icon?: React.ReactNode;
+  /** Sits at the row's right edge, so its content packs against that edge. */
+  mirrored?: boolean;
+}) {
   return (
     <span
       className={cn(
-        "w-16 shrink-0 pt-px text-[10px] font-medium uppercase tracking-wider",
-        tone === "you" ? "text-foreground/70" : "text-muted-foreground",
+        "flex w-[4.5rem] shrink-0 items-start gap-1 pt-px",
+        // `justify-end` rather than `text-right`: this is a flex row now, and on
+        // a mirrored line the label has to sit against the panel's edge, not
+        // merely be right-aligned inside a box that is already at it.
+        mirrored ? "justify-end" : "justify-between",
       )}
     >
-      {label}
+      <span
+        className={cn(
+          "text-[10px] font-medium uppercase tracking-wider",
+          tone === "you" ? "text-foreground/70" : "text-muted-foreground",
+        )}
+      >
+        {label}
+      </span>
+      {icon}
     </span>
   );
 }
@@ -86,39 +170,66 @@ function Line({
   tone,
   ts,
   surface = false,
+  mine = false,
+  icon,
   children,
 }: {
   label: string;
   tone?: "you" | "planner" | undefined;
   ts?: number;
-  /** Puts the content on a raised tint. The one thing worth taking from a
-   *  messenger UI: the operator's own turns need to be findable when scrolling
-   *  back through a hundred machine frames, and a surface does that in
-   *  peripheral vision where a gutter word does not. Not a bubble — full width,
-   *  same row, same gutter, same timestamp. */
+  /** Puts the content on a raised tint — what makes the operator's own turns
+   *  findable in peripheral vision while scrolling back through a hundred
+   *  machine frames, which a gutter word alone does not. */
   surface?: boolean;
+  /**
+   * The operator's own turn: the whole row mirrors to the right edge — gutter,
+   * timestamp and all — and the content stops filling the row so that a short
+   * answer is a short block rather than a full-width band.
+   *
+   * `flex-row-reverse` and nothing else, so there is exactly one definition of
+   * what a row is. The reversal makes the right edge the main-start, which is
+   * what packs these against it; the gutter's own text then hangs off that edge
+   * rather than floating 40px inside it (`mirrored`).
+   */
+  mine?: boolean;
+  /** The severity glyph. Rendered inside the gutter — see `Gutter`, which is
+   *  where the reason it must not sit in front of the message is written down. */
+  icon?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <li className="flex gap-3 px-1 py-2 text-[13px]">
-      <Gutter label={label} tone={tone} />
+    <li className={cn("flex gap-2 px-1 py-2 text-[13px] @lg:gap-3", mine && "flex-row-reverse")}>
+      <Gutter label={label} tone={tone} icon={mine ? undefined : icon} mirrored={mine} />
       {/*
         `max-w-[68ch]`: these rows are as wide as the panel, which on a 1440px
         window with both rails shut is past 110 characters — roughly twice the
         measure prose stays readable at, and the reason a three-line question
-        read as a wall. The column keeps its left edge so the gutter still lines
-        up; the slack goes to the right of the text, where the timestamp is.
+        read as a wall.
+
+        `flex-1` on the planner's side only. It is what pushes the timestamp out
+        to the far edge of a machine row, which is where it belongs on something
+        being scanned. On the operator's side it would do the opposite of what
+        the mirroring is for — stretching a four-word answer into a band with
+        its timestamp stranded at the other end of the panel — so the block
+        sizes to its content and the timestamp travels with it.
       */}
       <div
         className={cn(
-          "min-w-0 max-w-[68ch] flex-1 whitespace-pre-wrap break-words",
+          "min-w-0 max-w-[68ch]",
+          mine ? "w-fit" : "flex-1",
+          WRAP_ANYWHERE,
           surface && "rounded-md bg-foreground/[0.055] px-3 py-1.5",
         )}
       >
         {children}
       </div>
       {ts === undefined ? null : (
-        <span className="shrink-0 pt-1 font-mono text-[11px] tabular-nums text-muted-foreground">
+        // A third fixed column — gutter, timestamp — on a 300px panel leaves the
+        // text about 200px, which is where a question started wrapping every
+        // four words. `sr-only` rather than `hidden`: the clock is still the
+        // only thing that says how long the loop sat on a turn, so it stays in
+        // the accessibility tree and comes back the moment there is room.
+        <span className="sr-only shrink-0 pt-1 font-mono text-[11px] tabular-nums text-muted-foreground @md:not-sr-only">
           {formatClock(ts)}
         </span>
       )}
@@ -132,24 +243,20 @@ function FrameRow({ frame }: { frame: DiscussFrame }) {
   switch (frame.kind) {
     case "you":
       return (
-        <Line label="You" tone="you" ts={frame.ts} surface>
+        <Line label="You" tone="you" ts={frame.ts} surface mine>
           {String(data.text ?? "")}
         </Line>
       );
 
     case "assumption":
       return (
-        <Line label="Planner" ts={frame.ts}>
-          <span className="flex items-start gap-2">
-            <LightbulbIcon
-              className="mt-0.5 size-3.5 shrink-0 text-status-warn"
-              aria-hidden="true"
-            />
-            <span>
-              <Chip tone="warn">assumption</Chip>{" "}
-              <span className="text-muted-foreground">{String(data.text ?? "")}</span>
-            </span>
-          </span>
+        <Line
+          label="Planner"
+          ts={frame.ts}
+          icon={<LightbulbIcon className="size-3.5 text-status-warn" aria-hidden="true" />}
+        >
+          <Chip tone="warn">assumption</Chip>{" "}
+          <span className="text-muted-foreground">{String(data.text ?? "")}</span>
         </Line>
       );
 
@@ -160,7 +267,7 @@ function FrameRow({ frame }: { frame: DiscussFrame }) {
             {data.id ? <Chip>{String(data.id)}</Chip> : null}
             {/* The id is what the composer points `aria-labelledby` at, so the
                 action zone announces the question rather than "edit, blank". */}
-            <span id={questionLabelId(frame.seq)} className="font-medium">
+            <span id={questionLabelId(frame.seq)} className="min-w-0 font-medium">
               {String(data.q ?? "")}
             </span>
           </span>
@@ -181,9 +288,12 @@ function FrameRow({ frame }: { frame: DiscussFrame }) {
 
     case "applied":
       return (
-        <Line label="Loop" ts={frame.ts}>
-          <span className="flex items-center gap-2 text-status-good">
-            <CheckIcon className="size-3.5" aria-hidden="true" />
+        <Line
+          label="Loop"
+          ts={frame.ts}
+          icon={<CheckIcon className="size-3.5 text-status-good" aria-hidden="true" />}
+        >
+          <span className="text-status-good">
             Applied {String(data.count ?? 0)} spec(s) to the backlog.
           </span>
         </Line>
@@ -191,11 +301,14 @@ function FrameRow({ frame }: { frame: DiscussFrame }) {
 
     case "aborted":
       return (
-        <Line label="Loop" ts={frame.ts}>
-          <span className="flex items-center gap-2 text-muted-foreground">
-            <CircleSlashIcon className="size-3.5" aria-hidden="true" />
+        <Line
+          label="Loop"
+          ts={frame.ts}
+          icon={<CircleSlashIcon className="size-3.5 text-muted-foreground" aria-hidden="true" />}
+        >
+          <span className="text-muted-foreground">
             Closed — nothing was written.
-            {data.reason ? <span>({String(data.reason)})</span> : null}
+            {data.reason ? ` (${String(data.reason)})` : null}
           </span>
         </Line>
       );
@@ -203,20 +316,19 @@ function FrameRow({ frame }: { frame: DiscussFrame }) {
     case "limit_paused": {
       const resetsAt = typeof data.resets_at === "number" ? data.resets_at : null;
       return (
-        <Line label="Loop" ts={frame.ts}>
-          <span className="flex items-start gap-2 text-status-warn">
-            <PauseIcon className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-            <span>
-              <span className="font-medium">
-                Subscription limit reached — waiting for the{" "}
-                {String(data.limit_type ?? "usage").replace(/_/g, "-")} window.
-              </span>
-              <span className="mt-0.5 block text-[12px] text-muted-foreground">
-                {resetsAt
-                  ? `Resumes on its own at ${formatClock(resetsAt)}. Nothing is lost — the turn is retried then.`
-                  : "Resumes on its own once the window resets."}
-              </span>
-            </span>
+        <Line
+          label="Loop"
+          ts={frame.ts}
+          icon={<PauseIcon className="size-3.5 text-status-warn" aria-hidden="true" />}
+        >
+          <span className="font-medium text-status-warn">
+            Subscription limit reached — waiting for the{" "}
+            {String(data.limit_type ?? "usage").replace(/_/g, "-")} window.
+          </span>
+          <span className="mt-0.5 block text-[12px] text-muted-foreground">
+            {resetsAt
+              ? `Resumes on its own at ${formatClock(resetsAt)}. Nothing is lost — the turn is retried then.`
+              : "Resumes on its own once the window resets."}
           </span>
         </Line>
       );
@@ -224,26 +336,51 @@ function FrameRow({ frame }: { frame: DiscussFrame }) {
 
     case "turn_failed":
       return (
-        <Line label="Loop" ts={frame.ts}>
-          <span className="flex items-start gap-2 text-status-warn">
-            <AlertTriangleIcon className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-            <span>
-              <span className="font-medium">That planner turn failed.</span>{" "}
-              <span className="text-muted-foreground">{String(data.text ?? "")}</span>
-              <span className="mt-0.5 block text-[12px] text-muted-foreground">
-                The conversation is intact — retrying resends this turn.
-              </span>
-            </span>
+        <Line
+          label="Loop"
+          ts={frame.ts}
+          icon={<AlertTriangleIcon className="size-3.5 text-status-warn" aria-hidden="true" />}
+        >
+          <span className="font-medium text-status-warn">That planner turn failed.</span>
+          {/* The CLI's own stderr, so it gets the log treatment rather than
+              being run into the sentence above it: a 900-character JSON blob
+              set as prose is unreadable at any width, and it is the one thing
+              on the row an operator might want to copy. */}
+          <span className="mt-1 block rounded border border-border/60 bg-background/50 px-2 py-1 font-mono text-[11px] leading-relaxed text-muted-foreground">
+            {String(data.text ?? "")}
+          </span>
+          <span className="mt-0.5 block text-[12px] text-muted-foreground">
+            The conversation is intact — retrying resends this turn.
           </span>
         </Line>
       );
 
+    // Only ever the *superseded* ones reach this branch — the newest proposal is
+    // rendered in full by the `proposal` slot. A revise round replaces the plan
+    // wholesale, so re-drawing four dead spec lists in the scrollback would bury
+    // the live one under its own history; a one-line marker keeps the place
+    // where it happened without keeping the contents.
+    case "specs_preview": {
+      const count = Array.isArray(data.specs) ? data.specs.length : 0;
+      return (
+        <Line label="Planner" ts={frame.ts}>
+          <span className="text-muted-foreground">
+            Proposed {count} spec{count === 1 ? "" : "s"} — replaced by the revision below.
+          </span>
+        </Line>
+      );
+    }
+
     case "error":
       return (
-        <Line label="Loop" ts={frame.ts}>
-          <span className="flex items-start gap-2 text-status-bad">
-            <AlertTriangleIcon className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-            {String(data.text ?? "The session failed.")}
+        <Line
+          label="Loop"
+          ts={frame.ts}
+          icon={<AlertTriangleIcon className="size-3.5 text-status-bad" aria-hidden="true" />}
+        >
+          <span className="font-medium text-status-bad">The session failed.</span>
+          <span className="mt-1 block rounded border border-border/60 bg-background/50 px-2 py-1 font-mono text-[11px] leading-relaxed text-muted-foreground">
+            {String(data.text ?? "No detail was reported.")}
           </span>
         </Line>
       );
@@ -251,6 +388,34 @@ function FrameRow({ frame }: { frame: DiscussFrame }) {
     default:
       return null;
   }
+}
+
+/**
+ * A terminal failure the frame log never carried, as the log's closing row.
+ *
+ * It used to be a `Banner` pinned above the conversation, in a `shrink-0` strip
+ * between the header and the scroll region — which cost the conversation 59px of
+ * a panel it is supposed to fill, permanently, on the one screen where the
+ * conversation *is* the page. It was also the wrong place to read it: the story
+ * ends at the bottom, which is where the eye already is and where every other
+ * terminal frame lands.
+ *
+ * Rendered as the last row instead: no height taken from anything, reading order
+ * preserved, and the same shape as the `error` frame it stands in for. The
+ * status chip in the session column is what stays unscrollable.
+ */
+function TrailingError({ text }: { text: string }) {
+  return (
+    <Line
+      label="Loop"
+      icon={<AlertTriangleIcon className="size-3.5 text-status-bad" aria-hidden="true" />}
+    >
+      <span className="font-medium text-status-bad">The session ended.</span>
+      <span className="mt-1 block rounded border border-border/60 bg-background/50 px-2 py-1 font-mono text-[11px] leading-relaxed text-muted-foreground">
+        {text}
+      </span>
+    </Line>
+  );
 }
 
 /** What the in-flight call is doing, from the newest `progress` frame.
@@ -301,17 +466,24 @@ function Thinking({ progress }: { progress?: DiscussFrame | undefined }) {
       : null;
 
   return (
-    <div className="flex gap-3 px-1 py-2 text-[13px]">
-      <Gutter label="Planner" />
+    <div className="flex gap-2 px-1 py-2 text-[13px] @lg:gap-3">
+      {/* The dots take the gutter's glyph slot, exactly as a severity icon
+          would, so the live row's text sits on the same left edge as every frame
+          above it — including the one that is about to replace it. */}
+      <Gutter
+        label="Planner"
+        icon={
+          <span className="flex gap-0.5 pt-1.5 text-muted-foreground" aria-hidden="true">
+            <span className="size-1 animate-pulse rounded-full bg-current [animation-delay:0ms]" />
+            <span className="size-1 animate-pulse rounded-full bg-current [animation-delay:150ms]" />
+            <span className="size-1 animate-pulse rounded-full bg-current [animation-delay:300ms]" />
+          </span>
+        }
+      />
       {/* `min-w-0`: without it this flex item sizes to its content, the `truncate`
           below never engages, and a long tool target pushed the row 115px past
           the work column's right edge at 375px. */}
-      <div className="flex min-w-0 max-w-[68ch] flex-1 items-start gap-2">
-        <span className="flex shrink-0 gap-1 pt-2 text-muted-foreground" aria-hidden="true">
-          <span className="size-1 animate-pulse rounded-full bg-current [animation-delay:0ms]" />
-          <span className="size-1 animate-pulse rounded-full bg-current [animation-delay:150ms]" />
-          <span className="size-1 animate-pulse rounded-full bg-current [animation-delay:300ms]" />
-        </span>
+      <div className="flex min-w-0 max-w-[68ch] flex-1 items-start">
         <div className="min-w-0 flex-1">
           {prose ? (
             <span
@@ -361,9 +533,26 @@ export function atTail(box: {
 
 export function PlannerTranscript({
   session,
+  trailingError = null,
+  proposal = null,
   className,
 }: {
   session: DiscussSession;
+  /** A terminal error the frame log does not already carry — see
+   *  `TrailingError`. Null when the log ends with it already. */
+  trailingError?: string | null;
+  /**
+   * The current plan, rendered in place of the newest `specs_preview` row.
+   *
+   * The page supplies it rather than this file building it, because the
+   * decision it carries is the page's. What matters here is only *where* it
+   * goes: in the conversation, at the point the planner produced it. It used to
+   * live in a fixed column to the right, which cost the chat a third of the
+   * screen permanently, put the plan out of reading order, and — since the
+   * column was suppressed on narrow frames — hid it behind a sheet at exactly
+   * the widths where there was least room to go looking.
+   */
+  proposal?: React.ReactNode;
   className?: string;
 }) {
   const box = useRef<HTMLElement>(null);
@@ -371,6 +560,9 @@ export function PlannerTranscript({
   // scroll event and nothing renders from it.
   const following = useRef(true);
   const count = session.frames.length;
+  /** The one proposal that is still on the table. Every earlier one was replaced
+   *  by a revision and is a marker row (see `FrameRow`'s `specs_preview`). */
+  const latestProposal = session.frames.findLast((f) => f.kind === "specs_preview")?.seq ?? null;
 
   // Follow the tail on every new frame — but ONLY if that is where the operator
   // already was. A planner turn emits progress frames continuously, and scrolling
@@ -409,11 +601,13 @@ export function PlannerTranscript({
       // in a box, and because the region is `h-full` under a fill panel, a short
       // conversation drew that box around several hundred pixels of nothing.
       // `DESIGN.md` §3.4: a log is Tier 3, content directly on its surface.
-      className={cn(
-        "min-h-0 overflow-y-auto px-2 py-1",
-        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-        className,
-      )}
+      // `overflow-x-clip` is a backstop, not the fix — the rows below wrap
+      // properly now (see `WRAP_ANYWHERE`). It is here because `overflow-y: auto`
+      // silently computes `overflow-x` to `auto` as well, so *any* future row
+      // that overflows by a pixel puts a horizontal scrollbar under a
+      // conversation. This log scrolls in one axis by construction; saying so
+      // means a regression clips instead of rearranging the screen.
+      className={cn("min-h-0 overflow-y-auto overflow-x-clip px-2 py-1", FOCUS_RING, className)}
     >
       {/*
         `min-h-full` + `justify-end` bottom-aligns a conversation too short to
@@ -433,9 +627,22 @@ export function PlannerTranscript({
         <ul role="log" aria-busy={session.status === "running"} className="divide-y divide-border">
           {session.frames
             .filter((frame) => !RENDERED_ELSEWHERE.has(frame.kind))
-            .map((frame) => (
-              <FrameRow key={frame.seq} frame={frame} />
-            ))}
+            .map((frame) =>
+              proposal !== null && frame.seq === latestProposal ? (
+                // No gutter and no `Line`: this is an artifact, not something
+                // said. It reads as a card in the flow of the conversation,
+                // which is what it is. Capped a little wider than prose —
+                // a spec card is a dense object, not a paragraph — but capped,
+                // because the alternative on a 1600px panel is file paths
+                // stranded four inches from the label above them.
+                <li key={frame.seq} className="px-1 py-3">
+                  <div className="max-w-[76ch]">{proposal}</div>
+                </li>
+              ) : (
+                <FrameRow key={frame.seq} frame={frame} />
+              ),
+            )}
+          {trailingError ? <TrailingError text={trailingError} /> : null}
         </ul>
         {session.status === "running" ? (
           <Thinking progress={session.frames.findLast((f) => f.kind === "progress")} />
