@@ -17,7 +17,7 @@ lane's port (see DEVDOCS/START-HERE.md §6) so it never collides with the dev
 server (8787) or studio-verify (8788).
 
 This is the only sanctioned capture path: it points the API at a throwaway state
-dir and never at `state/demo-project.*`.
+dir, never at a real project's state.
 """
 
 from __future__ import annotations
@@ -86,7 +86,12 @@ TARGETS: list[tuple[str, str]] = [
     # calls the planner for real.
     ("discuss-idle", f"{P}/discuss"),
     ("error-404-project", "/api/projects/nope/summary"),
-    ("error-409-no-store", "/api/projects/demo-project/summary"),
+    # Allowlisted but unseeded, so the read is a 409 rather than a 404. Which
+    # project that is depends on the machine — the allowlist is read from the
+    # backend's gitignored `projects/` tree — so it is named by env var, and the
+    # committed fixture carries the neutral name this default produces.
+    ("error-409-no-store",
+     f"/api/projects/{os.environ.get('ORCH_NO_STORE_PROJECT', 'demo-project')}/summary"),
     ("error-404-task", f"{P}/tasks/T-999"),
     ("error-404-job", f"{P}/jobs/j-unknown"),
     ("error-422-usage", f"{P}/usage?group_by=bogus"),
