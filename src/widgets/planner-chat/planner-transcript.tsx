@@ -111,45 +111,53 @@ export function questionLabelId(seq: number): string {
 const WRAP_ANYWHERE = "whitespace-pre-wrap [overflow-wrap:anywhere]";
 
 /**
- * The scan column: who spoke, and how bad it was.
+ * Machine output inside a message — the CLI's stderr, a close reason. Set as a
+ * log block rather than run into the sentence above it: a 900-character JSON
+ * blob set as prose is unreadable at any width, and it is the one thing on the
+ * row an operator might want to copy.
  *
- * **The severity glyph lives in here, not in front of the message.** It began as
- * the first child of a flex wrapper inside the text, which shifted that row's
- * text right by the width of an icon — so an `assumption` and the `question`
- * under it started at different places and the log had no left edge to read
- * down. Reserving a separate icon column fixed the *mutual* alignment and left
- * the other half of the problem: a second fixed column, empty on the rows that
- * carry no icon, holding every machine message 26px off its own gutter.
+ * Its left edge is the content column's, which is where the row's glyph starts
+ * — so the box sits squarely under the headline block it belongs to rather than
+ * stepping in from it. Full width to the right, because the thing inside it is
+ * an 900-character run that wants every pixel of measure it can get.
+ */
+const LOG_BLOCK =
+  "mt-1 block rounded border border-border/60 bg-background/50 px-2 py-1 font-mono text-[11px] leading-relaxed text-muted-foreground";
+
+/**
+ * The scan column: who spoke.
  *
- * One column does both jobs. The text now starts at the same offset on every
- * row, icon or no icon, and the glyph still sits immediately to its left where
- * it is read as belonging to that message.
+ * Only the speaker. The severity glyph used to live in here too, packed against
+ * this column's right edge — which read as the first character of the message
+ * (glyph, then heading, one unit) while the message's own detail blocks started
+ * 22px to the right of it, at the heading. So every one of these rows had two
+ * left edges: the block the eye takes as the row, and the text under it, offset
+ * by exactly the width of the glyph column. The glyph now opens the message
+ * itself (`Line`'s `title`), and nothing in the row is offset from anything.
  *
- * The width is what the content needs — "Planner" is 51px at this size, plus a
- * gap and a 14px glyph — rather than a round number. It was `w-16` with nothing
- * in it, which is fine against 900px of panel and is a fifth of the width at
- * 300, where the text beside it wrapped every four words.
+ * The width is what the content needs — "Planner" is 51px at this size — rather
+ * than a round number. It was `w-16` with nothing in it, which is fine against
+ * 900px of panel and is a fifth of the width at 300, where the text beside it
+ * wrapped every four words.
  */
 function Gutter({
   label,
   tone,
-  icon,
   mirrored = false,
 }: {
   label: string;
   tone?: "you" | "planner" | undefined;
-  icon?: React.ReactNode;
   /** Sits at the row's right edge, so its content packs against that edge. */
   mirrored?: boolean;
 }) {
   return (
     <span
       className={cn(
-        "flex w-[4.5rem] shrink-0 items-start gap-1 pt-px",
-        // `justify-end` rather than `text-right`: this is a flex row now, and on
-        // a mirrored line the label has to sit against the panel's edge, not
+        "flex w-[3.5rem] shrink-0 items-start pt-px",
+        // `justify-end` rather than `text-right`: this is a flex row, and on a
+        // mirrored line the label has to sit against the panel's edge, not
         // merely be right-aligned inside a box that is already at it.
-        mirrored ? "justify-end" : "justify-between",
+        mirrored ? "justify-end" : "justify-start",
       )}
     >
       <span
@@ -160,7 +168,6 @@ function Gutter({
       >
         {label}
       </span>
-      {icon}
     </span>
   );
 }
@@ -172,6 +179,7 @@ function Line({
   surface = false,
   mine = false,
   icon,
+  title,
   children,
 }: {
   label: string;
@@ -192,14 +200,23 @@ function Line({
    * rather than floating 40px inside it (`mirrored`).
    */
   mine?: boolean;
-  /** The severity glyph. Rendered inside the gutter — see `Gutter`, which is
-   *  where the reason it must not sit in front of the message is written down. */
+  /**
+   * The severity glyph. It opens `title`, on the message's own first line —
+   * see `Gutter` for why it is no longer a column of its own.
+   */
   icon?: React.ReactNode;
-  children: React.ReactNode;
+  /**
+   * The row's headline: what happened, and the chip or glyph that classifies
+   * it. Separate from `children` because the glyph has to be *inside* the
+   * content column for the rest of the message to sit under it, and only this
+   * component knows where that column starts.
+   */
+  title?: React.ReactNode;
+  children?: React.ReactNode;
 }) {
   return (
     <li className={cn("flex gap-2 px-1 py-2 text-[13px] @lg:gap-3", mine && "flex-row-reverse")}>
-      <Gutter label={label} tone={tone} icon={mine ? undefined : icon} mirrored={mine} />
+      <Gutter label={label} tone={tone} mirrored={mine} />
       {/*
         `max-w-[68ch]`: these rows are as wide as the panel, which on a 1440px
         window with both rails shut is past 110 characters — roughly twice the
@@ -221,6 +238,20 @@ function Line({
           surface && "rounded-md bg-foreground/[0.055] px-3 py-1.5",
         )}
       >
+        {title === undefined ? null : (
+          // The glyph and the headline are one block, and the column starts at
+          // the glyph — so everything `children` renders begins under the whole
+          // unit rather than under the words half of it.
+          //
+          // `h-5` on the glyph rather than `items-center` on the row: centring
+          // the row would drag the glyph down the middle of a headline that
+          // wrapped to three lines. This pins it to the centre of the *first*
+          // line, at any measure.
+          <span className="flex items-start gap-2">
+            {icon ? <span className="flex h-5 shrink-0 items-center">{icon}</span> : null}
+            <span className="min-w-0">{title}</span>
+          </span>
+        )}
         {children}
       </div>
       {ts === undefined ? null : (
@@ -254,22 +285,34 @@ function FrameRow({ frame }: { frame: DiscussFrame }) {
           label="Planner"
           ts={frame.ts}
           icon={<LightbulbIcon className="size-3.5 text-status-warn" aria-hidden="true" />}
+          title={<Chip tone="warn">assumption</Chip>}
         >
-          <Chip tone="warn">assumption</Chip>{" "}
-          <span className="text-muted-foreground">{String(data.text ?? "")}</span>
+          {/* Stacked, not inline. A chip beside prose sets the first line 80px
+              in and every wrapped line back at the row's left edge, so the same
+              sentence has two left margins — and where the break falls depends
+              on the panel width, which is how the badge appeared to move
+              against its own text. */}
+          <span className="mt-1 block text-muted-foreground">{String(data.text ?? "")}</span>
         </Line>
       );
 
     case "question":
       return (
-        <Line label="Planner" ts={frame.ts}>
-          <span className="flex flex-wrap items-baseline gap-x-2">
-            {data.id ? <Chip>{String(data.id)}</Chip> : null}
-            {/* The id is what the composer points `aria-labelledby` at, so the
-                action zone announces the question rather than "edit, blank". */}
-            <span id={questionLabelId(frame.seq)} className="min-w-0 font-medium">
-              {String(data.q ?? "")}
-            </span>
+        <Line
+          label="Planner"
+          ts={frame.ts}
+          // Stacked rather than wrapped: with the id inline, a short question
+          // sat beside it and a long one dropped under it, so the question text
+          // started in a different place from one row to the next.
+          title={data.id ? <Chip>{String(data.id)}</Chip> : undefined}
+        >
+          {/* The id is what the composer points `aria-labelledby` at, so the
+              action zone announces the question rather than "edit, blank". */}
+          <span
+            id={questionLabelId(frame.seq)}
+            className={cn("block font-medium", data.id ? "mt-1" : null)}
+          >
+            {String(data.q ?? "")}
           </span>
           {data.why ? (
             <span className="mt-0.5 block text-[12px] text-muted-foreground">
@@ -292,11 +335,12 @@ function FrameRow({ frame }: { frame: DiscussFrame }) {
           label="Loop"
           ts={frame.ts}
           icon={<CheckIcon className="size-3.5 text-status-good" aria-hidden="true" />}
-        >
-          <span className="text-status-good">
-            Applied {String(data.count ?? 0)} spec(s) to the backlog.
-          </span>
-        </Line>
+          title={
+            <span className="text-status-good">
+              Applied {String(data.count ?? 0)} spec(s) to the backlog.
+            </span>
+          }
+        />
       );
 
     case "aborted":
@@ -305,12 +349,13 @@ function FrameRow({ frame }: { frame: DiscussFrame }) {
           label="Loop"
           ts={frame.ts}
           icon={<CircleSlashIcon className="size-3.5 text-muted-foreground" aria-hidden="true" />}
-        >
-          <span className="text-muted-foreground">
-            Closed — nothing was written.
-            {data.reason ? ` (${String(data.reason)})` : null}
-          </span>
-        </Line>
+          title={
+            <span className="text-muted-foreground">
+              Closed — nothing was written.
+              {data.reason ? ` (${String(data.reason)})` : null}
+            </span>
+          }
+        />
       );
 
     case "limit_paused": {
@@ -320,11 +365,13 @@ function FrameRow({ frame }: { frame: DiscussFrame }) {
           label="Loop"
           ts={frame.ts}
           icon={<PauseIcon className="size-3.5 text-status-warn" aria-hidden="true" />}
+          title={
+            <span className="font-medium text-status-warn">
+              Subscription limit reached — waiting for the{" "}
+              {String(data.limit_type ?? "usage").replace(/_/g, "-")} window.
+            </span>
+          }
         >
-          <span className="font-medium text-status-warn">
-            Subscription limit reached — waiting for the{" "}
-            {String(data.limit_type ?? "usage").replace(/_/g, "-")} window.
-          </span>
           <span className="mt-0.5 block text-[12px] text-muted-foreground">
             {resetsAt
               ? `Resumes on its own at ${formatClock(resetsAt)}. Nothing is lost — the turn is retried then.`
@@ -340,15 +387,9 @@ function FrameRow({ frame }: { frame: DiscussFrame }) {
           label="Loop"
           ts={frame.ts}
           icon={<AlertTriangleIcon className="size-3.5 text-status-warn" aria-hidden="true" />}
+          title={<span className="font-medium text-status-warn">That planner turn failed.</span>}
         >
-          <span className="font-medium text-status-warn">That planner turn failed.</span>
-          {/* The CLI's own stderr, so it gets the log treatment rather than
-              being run into the sentence above it: a 900-character JSON blob
-              set as prose is unreadable at any width, and it is the one thing
-              on the row an operator might want to copy. */}
-          <span className="mt-1 block rounded border border-border/60 bg-background/50 px-2 py-1 font-mono text-[11px] leading-relaxed text-muted-foreground">
-            {String(data.text ?? "")}
-          </span>
+          <span className={LOG_BLOCK}>{String(data.text ?? "")}</span>
           <span className="mt-0.5 block text-[12px] text-muted-foreground">
             The conversation is intact — retrying resends this turn.
           </span>
@@ -377,11 +418,9 @@ function FrameRow({ frame }: { frame: DiscussFrame }) {
           label="Loop"
           ts={frame.ts}
           icon={<AlertTriangleIcon className="size-3.5 text-status-bad" aria-hidden="true" />}
+          title={<span className="font-medium text-status-bad">The session failed.</span>}
         >
-          <span className="font-medium text-status-bad">The session failed.</span>
-          <span className="mt-1 block rounded border border-border/60 bg-background/50 px-2 py-1 font-mono text-[11px] leading-relaxed text-muted-foreground">
-            {String(data.text ?? "No detail was reported.")}
-          </span>
+          <span className={LOG_BLOCK}>{String(data.text ?? "No detail was reported.")}</span>
         </Line>
       );
 
@@ -409,11 +448,9 @@ function TrailingError({ text }: { text: string }) {
     <Line
       label="Loop"
       icon={<AlertTriangleIcon className="size-3.5 text-status-bad" aria-hidden="true" />}
+      title={<span className="font-medium text-status-bad">The session ended.</span>}
     >
-      <span className="font-medium text-status-bad">The session ended.</span>
-      <span className="mt-1 block rounded border border-border/60 bg-background/50 px-2 py-1 font-mono text-[11px] leading-relaxed text-muted-foreground">
-        {text}
-      </span>
+      <span className={LOG_BLOCK}>{text}</span>
     </Line>
   );
 }
@@ -467,23 +504,23 @@ function Thinking({ progress }: { progress?: DiscussFrame | undefined }) {
 
   return (
     <div className="flex gap-2 px-1 py-2 text-[13px] @lg:gap-3">
-      {/* The dots take the gutter's glyph slot, exactly as a severity icon
-          would, so the live row's text sits on the same left edge as every frame
-          above it — including the one that is about to replace it. */}
-      <Gutter
-        label="Planner"
-        icon={
-          <span className="flex gap-0.5 pt-1.5 text-muted-foreground" aria-hidden="true">
-            <span className="size-1 animate-pulse rounded-full bg-current [animation-delay:0ms]" />
-            <span className="size-1 animate-pulse rounded-full bg-current [animation-delay:150ms]" />
-            <span className="size-1 animate-pulse rounded-full bg-current [animation-delay:300ms]" />
-          </span>
-        }
-      />
+      <Gutter label="Planner" />
       {/* `min-w-0`: without it this flex item sizes to its content, the `truncate`
           below never engages, and a long tool target pushed the row 115px past
-          the work column's right edge at 375px. */}
-      <div className="flex min-w-0 max-w-[68ch] flex-1 items-start">
+          the work column's right edge at 375px.
+
+          The dots open the row exactly where a severity glyph opens a frame, and
+          the text sits under both — so the live row has the same shape as the
+          frame that is about to replace it and nothing jumps at the swap. */}
+      <div className="flex min-w-0 max-w-[68ch] flex-1 items-start gap-2">
+        <span
+          className="flex h-5 shrink-0 items-center gap-0.5 text-muted-foreground"
+          aria-hidden="true"
+        >
+          <span className="size-1 animate-pulse rounded-full bg-current [animation-delay:0ms]" />
+          <span className="size-1 animate-pulse rounded-full bg-current [animation-delay:150ms]" />
+          <span className="size-1 animate-pulse rounded-full bg-current [animation-delay:300ms]" />
+        </span>
         <div className="min-w-0 flex-1">
           {prose ? (
             <span
