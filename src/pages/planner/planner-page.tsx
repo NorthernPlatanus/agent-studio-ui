@@ -59,8 +59,11 @@
  * blank this screen to a start form: the reading was gone along with the loop,
  * which is the wrong half to lose. The API now persists the frame log
  * (`store.save_discussion_log`) and rebuilds a read-only session from it, so a
- * restart costs the turn and not the transcript. `PersistedTranscript` below is
- * what remains for stores written before that.
+ * restart costs the turn and not the transcript.
+ *
+ * A store written before frame logs existed has only the flattened `ROLE: text`
+ * blob and no log, so the API hands it back as `state.transcript` with no session.
+ * `PersistedTranscript` below is what that gets.
  */
 
 import { useQueryClient } from "@tanstack/react-query";
@@ -79,7 +82,6 @@ import {
 } from "@/entities/discuss";
 import {
   openDiscussStream,
-  useCloseDiscuss,
   useDiscussReply,
   useDiscussSettings,
   useDiscussState,
@@ -100,7 +102,6 @@ import { useNow } from "@/shared/hooks";
 import { formatClock, formatDuration } from "@/shared/lib/format";
 import { Banner } from "@/shared/ui/banner";
 import { Button } from "@/shared/ui/button";
-import { Disclosure } from "@/shared/ui/disclosure";
 import { FilePath } from "@/shared/ui/file-path";
 import { Panel, PanelBody, PanelFooter, PanelHeader } from "@/shared/ui/panel";
 import { Region } from "@/shared/ui/region";
@@ -119,22 +120,28 @@ import {
 /**
  * The flattened transcript, for a store written before frame logs existed.
  *
- * The server sends this **only** when it has no session to give — with a frame
- * log present it returns the conversation properly and leaves this empty, so
- * the two can never appear together. That pairing was the bug: the same
- * exchange rendered once as a chat and once as a `ROLE: text` dump beside it.
+ * The server sends it **only** when it has no session to give: with a frame log
+ * present it returns the conversation properly and leaves this empty, so the two
+ * can never appear together.
  *
- * Plain text, so it gets the log treatment rather than being dressed up as a
- * conversation it can no longer become — and folded, because it is the one
- * thing on an otherwise-empty screen that must not outweigh the composer.
+ * Rendered as what it is — plain text — but unfolded and inside the panel, in the
+ * same shape as a live conversation: the reading scrolls, the composer is pinned
+ * under it. Folding it into a disclosure on an otherwise-empty page put the one
+ * thing on screen behind a triangle.
+ *
+ * It is *not* decoded into frames. The blob is written by `save_discussion` before
+ * each planner call and the planner's own turn is appended to `turns` only on an
+ * answered question round (`nodes/discuss.py`), so the plan it produced was never
+ * in here to recover — a parser would dress up user turns and nested
+ * `(resumed session)` wrappers as a conversation that does not exist.
+ *
+ * TODO: the planner writes markdown; this renders it as plain text.
  */
 function PersistedTranscript({ text }: { text: string }) {
   return (
-    <Disclosure title="Earlier conversation" meta="from before this store kept frames">
-      <pre className="max-h-72 overflow-auto rounded-lg border border-border bg-background/50 px-3 py-2 font-mono text-[11px] leading-relaxed text-muted-foreground">
-        {text}
-      </pre>
-    </Disclosure>
+    <pre className="whitespace-pre-wrap px-3 py-3 font-mono text-[11px] leading-relaxed text-muted-foreground">
+      {text}
+    </pre>
   );
 }
 
@@ -150,7 +157,6 @@ export function PlannerPage() {
   const settings = useDiscussSettings(project, sessionId);
   const uploadPin = useUploadPin(project, sessionId);
   const removePin = useRemovePin(project, sessionId);
-  const close = useCloseDiscuss(project, sessionId);
 
   // Lifted out of the composer because the decision has two halves in two
   // places: the buttons and the revise box swap for one another in the action
@@ -214,11 +220,11 @@ export function PlannerPage() {
   }
 
   const options = state.data.options;
+
   const specs = proposedSpecs(session);
   const stated = assumptions(session);
   const waiting = expects(session);
   const thinking = isThinking(session);
-  const persisted = state.data.transcript;
 
   const deciding = waiting === "decision";
   const applied = session?.status === "done";
@@ -238,9 +244,14 @@ export function PlannerPage() {
     session.error !== null &&
     session.frames.some((f) => f.kind === "error" && f.data.text === session.error);
 
+  // "What do you want built?" only on a planner that has never been opened. A
+  // stored transcript is a conversation the operator can read on this screen, so
+  // the form below it is starting the *next* one.
+  const firstEver = session === null && state.data.transcript === "";
+
   const startForm = (
     <StartDiscuss
-      heading={session === null ? "What do you want built?" : "Start a new session"}
+      heading={firstEver ? "What do you want built?" : "Start a new session"}
       blockedByJob={state.data.blocked_by_job ?? null}
       runnable={detail?.runnable === true}
       runnableDetail={detail?.runnable_detail}
@@ -281,9 +292,10 @@ export function PlannerPage() {
     />
   );
 
-  // No `Panel` when there is no session. A titled bordered region is Tier 1 —
-  // "a discrete thing with its own actions" — and wrapping one composer in a
-  // frame that fills the work column drew a border around six hundred pixels of
+  // No `Panel` when there is **no conversation at all** — a project whose
+  // planner has never been opened. A titled bordered region is Tier 1, "a
+  // discrete thing with its own actions", and wrapping one composer in a frame
+  // that fills the work column drew a border around six hundred pixels of
   // nothing, with a "Planner" header duplicating the location chip above it.
   //
   // **Bottom-aligned, and that is the whole point of it.** Once a session
@@ -295,12 +307,30 @@ export function PlannerPage() {
   // the real one lives and the same submit reads as the frame growing upward
   // around what was written.
   if (session === null) {
+    // A stored blob is still the reading, so it gets the panel and the pinned
+    // composer — the same shape as a live conversation, minus the reply.
+    if (state.data.transcript !== "") {
+      return (
+        <Screen fill>
+          <TurnHeartbeat running={false} activity={null} />
+          <Panel fill>
+            <PanelHeader
+              title="Planner"
+              meta={<StatusChip tone="neutral">Earlier conversation</StatusChip>}
+            />
+            <PanelBody scroll flush>
+              <PersistedTranscript text={state.data.transcript} />
+            </PanelBody>
+            <PanelFooter>{startForm}</PanelFooter>
+          </Panel>
+        </Screen>
+      );
+    }
     return (
       <Screen fill>
         <TurnHeartbeat running={false} activity={null} />
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="mx-auto flex min-h-full w-full max-w-[38rem] flex-col justify-end gap-5 pt-10 pb-3">
-            {persisted === "" ? null : <PersistedTranscript text={persisted} />}
             {startForm}
           </div>
         </div>
@@ -514,14 +544,19 @@ export function PlannerPage() {
                 <SlidersHorizontalIcon aria-hidden="true" />
                 Session
               </Button>
-              {/* Only while there is something to close. On an ended session
-                  this was a button whose whole effect had already happened. */}
+              {/* Parked with no handler until the server can abort a turn in
+                  flight: `DELETE /discuss/{id}` queues a sentinel only
+                  `Session.read` consumes, so a mid-turn click lands minutes
+                  later as "discard the plan you just produced"
+                  (`docs/FIX_PLAN_DISCUSS_AND_TASK_WRITES.md` §1).
+                  `pointer-events-auto` undoes the base button's
+                  `disabled:pointer-events-none` so the cursor still reports it. */}
               {live ? (
                 <Button
                   size="xs"
                   variant="ghost"
-                  onClick={() => close.mutate()}
-                  disabled={close.isPending}
+                  disabled
+                  className="disabled:pointer-events-auto disabled:cursor-not-allowed"
                 >
                   Close
                 </Button>
@@ -540,7 +575,7 @@ export function PlannerPage() {
           content is at the bottom. The case it existed for — an error the frame
           log never carried — goes to `trailingError` instead.
         */}
-        <PanelBody scroll flush className="px-3 py-3">
+        <PanelBody scroll flush className="px-3 py-0">
           <PlannerTranscript
             session={session}
             trailingError={session.error && !errorEchoed ? session.error : null}
