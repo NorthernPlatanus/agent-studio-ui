@@ -5,7 +5,12 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
+  /* The page sits below the card, in both themes. Light ran `--background` and
+     `--card` at the same `oklch(1 0 0)`, so a panel had no elevation where dark's
+     had +0.06. The page recedes rather than the card lifting: the status hues
+     below are measured against `--card`. 0.97 is a 1.09:1 delta, dark's is
+     1.10:1. */
+  --background: oklch(0.97 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
@@ -13,11 +18,15 @@
   --popover-foreground: oklch(0.145 0 0);
   --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
+  /* Fills, one step below the page: at 0.97 they *were* the page, so a hover read
+     as nothing happening. */
+  --secondary: oklch(0.94 0 0);
   --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
+  --muted: oklch(0.94 0 0);
+  /* 0.556 measured 4.34:1 on the 0.97 page — it cleared AA only because the
+     page used to be white. 0.52 is 5.05:1 there and 4.62:1 on `--muted`. */
+  --muted-foreground: oklch(0.52 0 0);
+  --accent: oklch(0.94 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0 0);
@@ -31,11 +40,11 @@
   --chart-5: oklch(0.769 0.188 70.08);
   /* The rail is the same value as the page (DESIGN §4): its border separates it,
      so elevation stays the exclusive signal of a Tier-1 panel. */
-  --sidebar: oklch(1 0 0);
+  --sidebar: oklch(0.97 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent: oklch(0.94 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
@@ -51,9 +60,13 @@
      warning headings and the `assumption` chip both failed AA in the light
      theme, and warn is the hue this app uses most. 0.54 measures 5.19:1 for the
      headings and 4.51:1 for the chip, whose own tinted background eats some of
-     the margin. Dark's values are already well clear. */
-  --status-neutral: oklch(0.55 0.015 260);
-  --status-progress: oklch(0.55 0.16 250);
+     the margin. Dark's values are already well clear.
+
+     `neutral` and `progress` were 0.55, which measured 4.44:1 and 4.45:1 once
+     the page stopped being white. 0.52 restores them to 5.0:1 on the page and
+     5.5:1 on the card. `good`, `warn` and `bad` still clear 4.5:1 on both. */
+  --status-neutral: oklch(0.52 0.015 260);
+  --status-progress: oklch(0.52 0.16 250);
   --status-good: oklch(0.52 0.13 155);
   --status-warn: oklch(0.54 0.14 70);
   --status-bad: oklch(0.55 0.21 27);

@@ -68,7 +68,9 @@ function SpecCard({ spec }: { spec: ProposedSpec }) {
             risk {spec.risk as string}
           </Chip>
         ) : null}
-        {str(spec.complexity) ? <Chip>{spec.complexity as string}</Chip> : null}
+        {/* Labelled, like its neighbours: `complexity` is one of s/m/l, and bare
+            it was a single stray letter between two labelled chips. */}
+        {str(spec.complexity) ? <Chip>size {spec.complexity as string}</Chip> : null}
         {spec.visual === true ? <Chip tone="progress">visual</Chip> : null}
         {agentAble ? null : <Chip tone="warn">human-only</Chip>}
         {candidates !== null && candidates > 1 ? (

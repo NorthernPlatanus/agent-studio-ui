@@ -696,6 +696,75 @@ describe("planner chat", () => {
   });
 });
 
+describe("the stored transcript, when there is no session to give", () => {
+  /*
+    `GET …/discuss` falls back to the flattened `ROLE: text` blob with
+    `session: null` when it has no frame log — a store written before frame logs
+    existed. It is not decoded into a conversation (see `PersistedTranscript`),
+    but it is the only reading on the screen, so it must not be folded away.
+  */
+  function serveTranscript(transcript: string) {
+    server.use(
+      http.get(`*/api/projects/:project/discuss`, () =>
+        HttpResponse.json({ ...fixtures.discussIdle, session: null, transcript }),
+      ),
+    );
+  }
+
+  it("shows it unfolded, under a header, with the start form pinned below", async () => {
+    serveTranscript("USER: rebuild the run timeline\nUSER: lanes");
+    renderPlanner();
+
+    expect(await screen.findByText(/rebuild the run timeline/)).toBeVisible();
+    // The regression: it used to be the only thing on the page and it was behind
+    // a disclosure triangle.
+    expect(screen.queryByRole("button", { name: /earlier conversation/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/earlier conversation/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /start a new session/i })).toBeInTheDocument();
+    // No reply composer: there is no loop to reply into.
+    expect(screen.queryByLabelText(/your reply to the planner/i)).not.toBeInTheDocument();
+  });
+
+  it("falls back to the bare start form when there is nothing stored", async () => {
+    // A project whose planner has never been opened — the one state that keeps
+    // the unbordered, bottom-aligned composer with no panel around it.
+    serveTranscript("");
+    renderPlanner();
+
+    expect(
+      await screen.findByRole("heading", { name: /what do you want built/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/earlier conversation/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("the Close button, parked", () => {
+  /*
+    `DELETE /discuss/{id}` queues a sentinel only `Session.read` consumes, so a
+    click mid-turn does nothing for minutes and then discards the finished plan
+    (`docs/FIX_PLAN_DISCUSS_AND_TASK_WRITES.md` §1). Until the server can abort a
+    turn in flight the control is shown without a handler, and this pins that:
+    present, and not firing.
+  */
+  it("is visible on a live session and does not close it", async () => {
+    const user = userEvent.setup();
+    let closed = false;
+    serve(session({ expects: "answer", frames: [frame("question", { q: "lanes?" })] }));
+    server.use(
+      http.delete(`*/api/projects/:project/discuss/:id`, () => {
+        closed = true;
+        return HttpResponse.json(session({ status: "aborted", expects: null }));
+      }),
+    );
+    renderPlanner();
+
+    const button = await screen.findByRole("button", { name: /^close$/i });
+    expect(button).toBeDisabled();
+    await user.click(button);
+    expect(closed).toBe(false);
+  });
+});
+
 describe("planner chat blocking", () => {
   it("explains that a running job holds the write slot", async () => {
     server.use(
