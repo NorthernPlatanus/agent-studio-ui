@@ -1,7 +1,30 @@
 # agent-studio-ui
 
-Control panel for the [agent-studio](../agent-studio) orchestrator: talk to the planner, watch
-the task pipeline, supervise running jobs, read the token/cost statistics.
+Control panel for the [agent-studio](https://github.com/NorthernPlatanus/agent-studio)
+orchestrator: talk to the planner, watch the task pipeline, supervise running jobs, read the
+token/cost statistics.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/planner-dark.jpg">
+  <img src=".github/assets/planner-light.jpg"
+       alt="The planner page: a closed session showing the model's recorded assumptions and the specs it proposed, with the job list and the activity feed in the right rail.">
+</picture>
+
+<sup>A planner session that ended without writing its specs. The shot follows your GitHub theme —
+the app ships both.</sup>
+
+## What you get
+
+- **Planner** — a conversation that ends in task specs rather than prose. Questions, decisions
+  and assumptions are separate frame kinds, so what the model decided on its own is visible
+  without rereading the thread.
+- **Pipeline** — tasks by state (ready, running, done, needs human, failed), the launch queue,
+  and runs down to their individual stages and candidates.
+- **Live** — one `EventSource` per project feeds the jobs list and the activity rail. The
+  stream carries invalidations, not rows: it tells the cache what went stale and the queries
+  refetch, so a reconnect can never leave the screen holding data nobody else can see.
+- **Stats** — usage grouped by role, model, provider or day, each row split by billing channel
+  and carrying its own cache-hit rate, plus solve rate per candidate model.
 
 ## Requirements
 
@@ -58,3 +81,7 @@ Two state rules that keep the libraries from fighting:
 
 Server types are **generated, never handwritten** (`npm run api:types`) and committed, so
 contract drift shows up as a diff rather than a runtime surprise.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
