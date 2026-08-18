@@ -165,7 +165,14 @@ export function TopBar({
           <button
             type="button"
             onClick={onToggleRail}
-            className={cn(ICON_BUTTON, railOpen && "bg-foreground/5 text-foreground")}
+            // Matches the rail's own breakpoint (`context-rail.tsx` is
+            // `hidden … xl:flex`): below 1280px the toggle flipped the store and
+            // nothing appeared.
+            className={cn(
+              ICON_BUTTON,
+              "hidden xl:inline-flex",
+              railOpen && "bg-foreground/5 text-foreground",
+            )}
             aria-label="Toggle activity panel"
             aria-pressed={railOpen}
           >

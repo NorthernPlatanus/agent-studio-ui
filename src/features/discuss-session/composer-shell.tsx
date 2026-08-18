@@ -107,7 +107,7 @@ export function ComposerShell({
           "field-sizing-content placeholder:text-muted-foreground",
         )}
       />
-      <div className="flex flex-wrap items-center gap-1.5 px-2 pb-2">{actions}</div>
+      <div className="flex flex-wrap justify-between items-center gap-1.5 px-2 pb-2">{actions}</div>
     </form>
   );
 }

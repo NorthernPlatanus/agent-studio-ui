@@ -135,11 +135,6 @@ export function StartDiscuss({
               {uploads.length > 0 ? `${uploads.length} attached` : "Attach"}
             </Button>
 
-            {/* The cost, as a readout rather than a warning. It is the figure
-                that should inform the click, and it belongs next to the click. */}
-            <span className="ml-auto pr-1 text-[11px] text-muted-foreground">
-              ~400k tokens per turn
-            </span>
             <Button type="submit" size="sm" disabled={!ready}>
               <ArrowUpIcon aria-hidden="true" />
               {pending ? "Starting…" : "Start session"}
