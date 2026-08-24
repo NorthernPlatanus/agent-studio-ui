@@ -33,6 +33,7 @@ import type { ProposedSpec } from "@/entities/discuss";
 import { formatInteger } from "@/shared/lib/format";
 import { Banner } from "@/shared/ui/banner";
 import { FilePath } from "@/shared/ui/file-path";
+import { Markdown } from "@/shared/ui/markdown";
 import { Panel, PanelBody, PanelFooter, PanelHeader } from "@/shared/ui/panel";
 import { Chip } from "@/shared/ui/status-dot";
 
@@ -81,10 +82,16 @@ function SpecCard({ spec }: { spec: ProposedSpec }) {
         {deps.length > 0 ? <Chip title={deps.join(", ")}>{deps.length} dep</Chip> : null}
       </div>
 
+      {/* The spec body is the longest planner-written prose on the screen and
+          the densest in code spans — it names the files, the fields and the
+          call sites the worker will touch. It was rendered raw, so a
+          three-paragraph description arrived as one run-on block with its
+          backticks and its numbered steps showing. */}
       {str(spec.description) ? (
-        <p className="text-[12px] leading-relaxed text-muted-foreground">
-          {spec.description as string}
-        </p>
+        <Markdown
+          text={spec.description as string}
+          className="text-[12px] leading-relaxed text-muted-foreground"
+        />
       ) : null}
 
       {/* The write allowlist is the one field worth reading every time. */}

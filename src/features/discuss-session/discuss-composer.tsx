@@ -11,12 +11,15 @@
  * buttons, and the free-text box only appears once the operator has chosen to
  * revise.
  *
- * The decision bar itself lives in `DiscussDecision` and is rendered by the page
- * inside the specs panel, not here: the choice is about *those specs*, and a
- * screen reader reaching an "Apply to the backlog" button before the list it
- * applies is exactly the mis-ordering that DOM position controls. `revising` is
- * therefore lifted to the page, since it is the one piece of state the two
- * halves share.
+ * The decision bar itself lives in `DiscussDecision`, and the page renders it in
+ * the action zone — the pinned strip this composer also occupies — rather than
+ * here or in the specs panel. It is still *after* the specs in reading order,
+ * which is what a screen reader reaching "Apply to the backlog" before the list
+ * it applies to needs; it is simply after them at the foot of the frame instead
+ * of inside their border. (It did sit in that border once. The panel scrolls, so
+ * past two or three specs the irreversible button left the screen — see
+ * `pages/planner/planner-page.tsx` for the full account.) `revising` is lifted to
+ * the page, since it is the one piece of state the two halves share.
  */
 
 import { ArrowUpIcon, CheckIcon, CircleSlashIcon, PencilIcon, RotateCwIcon } from "lucide-react";
@@ -69,7 +72,8 @@ export function DiscussComposer({
 }: {
   expects: Expects;
   disabled: boolean;
-  /** Lifted: the specs panel owns the button that sets it. */
+  /** Lifted: `DiscussDecision`'s Revise button is what sets it, and the specs
+   *  panel reads it to decide what its note says. Three places, one owner. */
   revising: boolean;
   onRevisingChange: (revising: boolean) => void;
   onSend: (text: string) => void;
@@ -176,8 +180,10 @@ export function DiscussComposer({
     );
   }
 
-  // The decision bar is the specs panel's, not this one's. Nothing to compose
-  // until the operator chooses to revise.
+  // The page swaps this whole component out for `DiscussDecision` while a
+  // proposal is undecided — there is nothing to compose until the operator
+  // chooses to revise, and a text box beside the approve button is exactly the
+  // free-text trap described at the top of this file.
   if (expects === "decision" && !revising) return null;
 
   const placeholder =
@@ -232,12 +238,19 @@ export function DiscussComposer({
 }
 
 /**
- * The commitment step, rendered in the specs panel's footer.
+ * The commitment step, rendered by the page in the pinned action zone.
  *
- * Split out of the composer so it sits inside the border of the panel whose
- * contents it writes, under the banner that states the consequence — rather than
- * in a separate region further down the page, which is where an operator pressed
- * it while looking at whatever the transcript happened to be showing.
+ * Split out of the composer because it is not a composer: it is three fixed
+ * choices, and the reply box must not be on screen beside them (see the top of
+ * this file for what "looks good" typed at a preview does).
+ *
+ * Where it sits is the page's call, not this component's, and it has moved once:
+ * out of the specs panel's footer and into the action zone. The panel version
+ * had the better adjacency — inside the border of the thing it writes — and lost
+ * on reachability, because that panel scrolls and a thirty-spec proposal pushed
+ * its own approve button off the bottom of a pane it could not be scrolled back
+ * into. The consequence banner travelled with it, so the warning is still
+ * directly above these buttons.
  */
 export function DiscussDecision({
   disabled,

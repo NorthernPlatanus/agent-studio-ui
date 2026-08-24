@@ -527,6 +527,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/projects/{project}/config/presets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Presets */
+        get: operations["get_presets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{project}/config/assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Assignments */
+        get: operations["get_assignments"];
+        put?: never;
+        /** Set Assignments */
+        post: operations["set_assignments"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/projects/{project}/stream": {
         parameters: {
             query?: never;
@@ -558,6 +593,120 @@ export interface components {
              * @description human-readable reason; safe to show verbatim
              */
             detail: string;
+        };
+        /**
+         * Assignment
+         * @description One bound worker key or role, with the layer that bound it.
+         */
+        Assignment: {
+            /**
+             * Key
+             * @description a worker_models key, or a role name
+             */
+            key: string;
+            /**
+             * Label
+             * @description the bound preset's label, or a description of the inline binding when no preset is named
+             */
+            label: string;
+            /**
+             * Preset
+             * @description null for an entry that still spells out provider/model inline
+             */
+            preset: string | null;
+            /** Effort */
+            effort: ("low" | "medium" | "high" | "xhigh" | "max") | null;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "profile" | "overlay";
+        };
+        /**
+         * AssignmentUpdate
+         * @description A preset binding for one worker or role. Two keys, and no others.
+         *
+         *     `extra="forbid"` is load-bearing, not tidiness: it is what keeps the overlay
+         *     from becoming a general-purpose config write endpoint. The panel binds to a
+         *     preset the server already defined; it never defines one, and nothing it sends
+         *     can become a base_url, an argv, an API key or a price.
+         */
+        AssignmentUpdate: {
+            /**
+             * Preset
+             * @description a key from GET …/config/presets
+             */
+            preset: string;
+            /**
+             * Effort
+             * @description null to inherit the preset's own effort
+             */
+            effort?: ("low" | "medium" | "high" | "xhigh" | "max") | null;
+        };
+        /**
+         * Assignments
+         * @description `GET/POST …/config/assignments` — who runs on what, and can it change now.
+         */
+        Assignments: {
+            /** Project */
+            project: string;
+            /** Workers */
+            workers: components["schemas"]["Assignment"][];
+            /** Roles */
+            roles: components["schemas"]["Assignment"][];
+            /**
+             * Default Worker
+             * @description roles.worker.default
+             */
+            default_worker: string | null;
+            /**
+             * Candidates
+             * @description roles.worker.candidates — the best-of-N pool
+             */
+            candidates: string[];
+            /**
+             * Locked
+             * @description a write would 409 right now. The form disables itself on this rather than failing on submit
+             */
+            locked: boolean;
+            /** Locked Reason */
+            locked_reason: string | null;
+        };
+        /**
+         * AssignmentsRequest
+         * @description `POST …/config/assignments` — the whole overlay, replaced.
+         *
+         *     Not a patch: the body IS the overlay after the call, so clearing a binding is
+         *     omitting its key rather than sending a sentinel. That keeps "reset this row to
+         *     the profile" and "reset everything" the same operation at one level of
+         *     nesting, and it means the file on disk is always exactly what the panel last
+         *     sent.
+         */
+        AssignmentsRequest: {
+            /**
+             * Workers
+             * @description worker_models key -> binding; keys must already exist
+             */
+            workers?: {
+                [key: string]: components["schemas"]["AssignmentUpdate"];
+            };
+            /**
+             * Roles
+             * @description role name -> binding; planner/reviewer/verifier, never `worker` (its pool has its own two fields below)
+             */
+            roles?: {
+                [key: string]: components["schemas"]["AssignmentUpdate"];
+            };
+            /**
+             * Default Worker
+             * @description roles.worker.default; null leaves the profile's alone
+             */
+            default_worker?: string | null;
+            /**
+             * Candidates
+             * @description roles.worker.candidates; null leaves the profile's alone
+             */
+            candidates?: string[] | null;
         };
         /** Candidate */
         Candidate: {
@@ -1029,6 +1178,93 @@ export interface components {
              * @default
              */
             note: string;
+        };
+        /**
+         * Preset
+         * @description One server-defined backend binding, as the panel may offer it.
+         *
+         *     **No field here names or carries an API key's value, and none ever may.**
+         *     The natural shape of "return the provider config" includes `api_key_env` and,
+         *     one careless step later, `os.environ[api_key_env]` — so the model has no key
+         *     field at all. `configured` is the boolean the UI actually needs, and
+         *     `configured_detail` may name the *environment variable* but never its
+         *     contents. `tests/api/test_config_endpoints.py` asserts that no value from
+         *     `os.environ` appears anywhere in the serialized response.
+         */
+        Preset: {
+            /**
+             * Key
+             * @description the `presets:` key — what an assignment names
+             */
+            key: string;
+            /** Label */
+            label: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "api" | "cli";
+            /**
+             * Provider
+             * @description the `providers:` key this preset binds to
+             */
+            provider: string;
+            /**
+             * Provider Type
+             * @description providers.<provider>.type, e.g. openai_responses or claude_cli
+             */
+            provider_type: string;
+            /** Model */
+            model: string | null;
+            /**
+             * Models
+             * @description model ids this provider is known to serve, including this preset's own — so a hand-edited id never vanishes from its own dropdown
+             */
+            models: string[];
+            /**
+             * Efforts
+             * @description levels that actually reach this backend; EMPTY when the provider type has no reasoning dial, so the UI can disable the control rather than offer a setting that gets dropped
+             */
+            efforts: ("low" | "medium" | "high" | "xhigh" | "max")[];
+            /**
+             * Effort
+             * @description the preset's own configured effort; null when it sets none, or when the configured value is not a level this repo knows
+             */
+            effort: ("low" | "medium" | "high" | "xhigh" | "max") | null;
+            /**
+             * Cash
+             * @description true when a call spends real money (metered API), false when it rides a CLI subscription. The two are reported side by side in the ledger and never summed
+             */
+            cash: boolean;
+            /** Input Per Mtok */
+            input_per_mtok: number | null;
+            /** Output Per Mtok */
+            output_per_mtok: number | null;
+            /**
+             * Configured
+             * @description the backend is usable from this server: an API provider's api_key_env is populated, or a CLI provider's binary resolves on PATH
+             */
+            configured: boolean;
+            /**
+             * Configured Detail
+             * @description why it is not usable, or a caveat worth showing; null when there is nothing to say. Never contains a secret's value
+             */
+            configured_detail: string | null;
+        };
+        /**
+         * Presets
+         * @description `GET …/config/presets` — the backends this project may bind to.
+         */
+        Presets: {
+            /** Project */
+            project: string;
+            /** Presets */
+            presets: components["schemas"]["Preset"][];
+            /**
+             * Efforts
+             * @description every level the assignment writer accepts; a preset's own `efforts` narrows this to what its backend honors
+             */
+            efforts: ("low" | "medium" | "high" | "xhigh" | "max")[];
         };
         /** Project */
         Project: {
@@ -3034,6 +3270,139 @@ export interface operations {
                 };
             };
             /** @description a discuss session is already open for this project, or the profile has no project.repo_path */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_presets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Presets"];
+                };
+            };
+            /** @description project is not in the allowlist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_assignments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Assignments"];
+                };
+            };
+            /** @description project is not in the allowlist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_assignments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignmentsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Assignments"];
+                };
+            };
+            /** @description project is not in the allowlist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description a job or a discuss session is live for this project, so its assignment overlay is locked — the same one-writer rule as a spawn */
             409: {
                 headers: {
                     [name: string]: unknown;

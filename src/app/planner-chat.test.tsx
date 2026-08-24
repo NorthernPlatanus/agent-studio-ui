@@ -252,6 +252,42 @@ describe("planner chat", () => {
     expect(screen.getAllByText(/reads the existing allowlist/)).toHaveLength(2);
   });
 
+  it("renders what the planner wrote as markdown, and what the operator typed verbatim", async () => {
+    // The planner's prompt is markdown and the model answers in kind, so every
+    // planner-authored field on this page arrives with code spans in it. They
+    // used to be printed: an operator read `` `files_write` `` with the
+    // backticks, in the row the whole screen exists to show them.
+    //
+    // The operator's own turn is the deliberate exception — an asterisk they
+    // typed is an asterisk on screen.
+    serve(
+      session({
+        frames: [
+          frame("you", { text: "use **exactly** src/**/*.ts" }),
+          frame("assumption", { text: "`files_write` stays exact — see **T-131**" }),
+          frame("question", { id: "q1", q: "Should `n_candidates` be 3?" }),
+          frame("awaiting", { expects: "answer" }),
+        ],
+      }),
+    );
+    renderPlanner();
+
+    // Code spans are elements now, not characters in a sentence.
+    const code = await screen.findByText("files_write");
+    expect(code.tagName).toBe("CODE");
+    expect(screen.getByText("T-131").tagName).toBe("STRONG");
+    expect(screen.getByText("n_candidates").tagName).toBe("CODE");
+    // No source markers left anywhere in the conversation.
+    expect(within(screen.getByRole("log")).queryByText(/`/)).not.toBeInTheDocument();
+
+    // ...and the operator's own turn came back exactly as they typed it: the
+    // markers are still characters, not formatting. Rendering their input in a
+    // different shape from the box they wrote it in is the one place where
+    // helpful formatting reads as the page having changed what they said.
+    expect(screen.getByText("use **exactly** src/**/*.ts")).toBeInTheDocument();
+    expect(screen.queryByText("exactly")).not.toBeInTheDocument();
+  });
+
   it("sends a typed answer while a question is pending", async () => {
     const user = userEvent.setup();
     const replies = serve(
@@ -700,8 +736,9 @@ describe("the stored transcript, when there is no session to give", () => {
   /*
     `GET …/discuss` falls back to the flattened `ROLE: text` blob with
     `session: null` when it has no frame log — a store written before frame logs
-    existed. It is not decoded into a conversation (see `PersistedTranscript`),
-    but it is the only reading on the screen, so it must not be folded away.
+    existed. It is the only reading on the screen in that state, so it is decoded
+    into the same conversation a live session gets (`StoredTranscript`) rather
+    than dumped, and it must not be folded away.
   */
   function serveTranscript(transcript: string) {
     server.use(
@@ -725,6 +762,122 @@ describe("the stored transcript, when there is no session to give", () => {
     expect(screen.queryByLabelText(/your reply to the planner/i)).not.toBeInTheDocument();
   });
 
+  it("shows it as the conversation it is, not a dump of one", async () => {
+    // The reported regression, and the state a real project is *always* in:
+    // `discussions.frames` is added by a store migration that runs on the first
+    // write, and opening this page is a read — so until a session is started,
+    // this branch is the whole planner screen. It used to be a monospace wall of
+    // `ROLE:` lines, which is what "there is just some info and no chat" was.
+    serveTranscript(
+      [
+        "SYSTEM: (resumed session)",
+        "SYSTEM: (resumed session)",
+        "USER: add a request inspector",
+        "second line of the same brief",
+        'PLANNER: {"questions":[{"id":"q1","q":"Bound to which shortcut?"}],"assumptions":["it reads the existing metrics endpoint"],"specs":[]}',
+        "USER: ctrl+i",
+      ].join("\n"),
+    );
+    renderPlanner();
+
+    // The operator's own turns, whole — the second line of a brief is most of
+    // what a real one contains.
+    expect(await screen.findByText(/add a request inspector/)).toBeVisible();
+    expect(screen.getByText(/second line of the same brief/)).toBeVisible();
+    expect(screen.getByText("ctrl+i")).toBeVisible();
+    // The planner's side, read out of the stored envelope rather than printed as
+    // the JSON it is stored as.
+    expect(screen.getByText("Bound to which shortcut?")).toBeVisible();
+    expect(screen.getByText(/it reads the existing metrics endpoint/)).toBeVisible();
+    expect(screen.queryByText(/"questions":/)).not.toBeInTheDocument();
+    // Two identical resume markers, said once.
+    expect(screen.getByText(/Resumed an earlier session \(2 times\)/)).toBeVisible();
+  });
+
+  it("draws the plan the old format did keep, instead of claiming it did not", async () => {
+    // The defect this replaces, found against a real store, not a fixture: the
+    // stored envelope carries the whole proposal — four specs with titles, write
+    // allowlists and risk — and the row summarised them as a count under the
+    // sentence "the plan itself was not kept in this format". The most valuable
+    // thing on the screen, discarded by a component describing an absence that
+    // was not there.
+    serveTranscript(
+      [
+        "USER: plan the backlog polish",
+        `PLANNER: ${JSON.stringify({
+          questions: [],
+          assumptions: ["backlog polish only"],
+          specs: [
+            {
+              id: "T-204",
+              title: "Extra chart annotations",
+              files_write: ["src/features/usage-chart/ui/annotations.tsx"],
+              risk: "low",
+            },
+            { id: "T-205", title: "Cosmetic theme variants", agent_able: false, files_write: [] },
+          ],
+        })}`,
+        "USER: i deleted it",
+      ].join("\n"),
+    );
+    renderPlanner();
+
+    expect(await screen.findByText("Extra chart annotations")).toBeVisible();
+    expect(screen.getByText("Cosmetic theme variants")).toBeVisible();
+    // The same card the live conversation draws, with the fields that answer
+    // "is this safe to hand to an agent" — not a count.
+    expect(screen.getByText("src/features/usage-chart/ui/annotations.tsx")).toBeVisible();
+    expect(screen.getByText("human-only")).toBeVisible();
+    expect(screen.queryByText(/was not kept in this format/i)).not.toBeInTheDocument();
+    // And it is honest about what cannot happen to it now.
+    expect(screen.getByText(/nothing here can be written now/i)).toBeVisible();
+  });
+
+  it("keeps only the newest stored proposal in full, marking the ones a round replaced", async () => {
+    // Same rule the live log follows: an edit round replaces the plan wholesale,
+    // so redrawing every superseded list buries the surviving one under its own
+    // history.
+    serveTranscript(
+      [
+        `PLANNER: ${JSON.stringify({ specs: [{ id: "OLD-1", title: "First attempt" }] })}`,
+        "USER: EDIT: narrow it",
+        `PLANNER: ${JSON.stringify({ specs: [{ id: "NEW-1", title: "Second attempt" }] })}`,
+        "APPLIED",
+      ].join("\n"),
+    );
+    renderPlanner();
+
+    expect(await screen.findByText("Second attempt")).toBeVisible();
+    expect(screen.queryByText("First attempt")).not.toBeInTheDocument();
+    expect(screen.getByText(/Proposed 1 spec — replaced by the revision below/)).toBeVisible();
+    // The session applied *something*, but the envelope that was approved was
+    // never written to this format — so the card must not claim these are it.
+    expect(screen.getByText(/may differ from this/i)).toBeVisible();
+  });
+
+  it("is reachable by keyboard, and says so when it is", async () => {
+    // The stored log is a scroll container with no focusable descendants, so it
+    // is in the tab order or it cannot be scrolled by keyboard at all (2.1.1) —
+    // and a tab stop with no visible indicator fails 2.4.7. The live transcript
+    // carries both; this branch copied the `tabIndex` and not the ring.
+    serveTranscript("USER: rebuild the run timeline");
+    renderPlanner();
+
+    const log = await screen.findByRole("region", { name: /earlier planner conversation/i });
+    expect(log).toHaveAttribute("tabindex", "0");
+    expect(log.className).toContain("focus-visible:ring-[3px]");
+  });
+
+  it("says plainly that the planner's half of an old conversation is gone", async () => {
+    // A blob with nothing but `USER:` lines is half a conversation. Rendering it
+    // as rows without saying so leaves the operator reading their own words back
+    // and wondering whether the planner ever answered.
+    serveTranscript("USER: rebuild the run timeline");
+    renderPlanner();
+
+    expect(await screen.findByText(/planner's replies are not recoverable/i)).toBeVisible();
+  });
+
   it("falls back to the bare start form when there is nothing stored", async () => {
     // A project whose planner has never been opened — the one state that keeps
     // the unbordered, bottom-aligned composer with no panel around it.
@@ -738,15 +891,20 @@ describe("the stored transcript, when there is no session to give", () => {
   });
 });
 
-describe("the Close button, parked", () => {
+describe("the Close button", () => {
   /*
-    `DELETE /discuss/{id}` queues a sentinel only `Session.read` consumes, so a
-    click mid-turn does nothing for minutes and then discards the finished plan
-    (`docs/FIX_PLAN_DISCUSS_AND_TASK_WRITES.md` §1). Until the server can abort a
-    turn in flight the control is shown without a handler, and this pins that:
-    present, and not firing.
+    `DELETE /discuss/{id}` queues a sentinel only `Session.read` consumes
+    (`api/discuss.DiscussManager._tear_down`). That makes the control correct on
+    an `awaiting` session — the loop is blocked on exactly that read — and wrong
+    on a running one, where the click lands minutes later and discards the plan
+    the turn just produced (`docs/FIX_PLAN_DISCUSS_AND_TASK_WRITES.md` §1).
   */
-  it("is visible on a live session and does not close it", async () => {
+  it("ends a session that is waiting on the operator", async () => {
+    // The gap this closes: the composer offers a way out of `decision`
+    // (Discard), `retry` (Discard) and `frozen` (Stop waiting) — but not of a
+    // pending question, which is where a conversation spends most of its life.
+    // With the button dead in every state, changing your mind mid-conversation
+    // meant restarting the API.
     const user = userEvent.setup();
     let closed = false;
     serve(session({ expects: "answer", frames: [frame("question", { q: "lanes?" })] }));
@@ -759,9 +917,91 @@ describe("the Close button, parked", () => {
     renderPlanner();
 
     const button = await screen.findByRole("button", { name: /^close$/i });
+    expect(button).toBeEnabled();
+    await user.click(button);
+    expect(closed).toBe(true);
+  });
+
+  it("refuses mid-turn, and says why rather than sitting there inert", async () => {
+    const user = userEvent.setup();
+    let closed = false;
+    serve(session({ status: "running", expects: null, frames: [frame("thinking")] }));
+    server.use(
+      http.delete(`*/api/projects/:project/discuss/:id`, () => {
+        closed = true;
+        return HttpResponse.json(session({ status: "aborted", expects: null }));
+      }),
+    );
+    renderPlanner();
+
+    const button = await screen.findByRole("button", { name: /close/i });
     expect(button).toBeDisabled();
+    // A disabled control with no explanation is the defect this replaced: the
+    // reason is on the button, for the pointer and for a screen reader.
+    expect(button).toHaveAttribute("title", expect.stringMatching(/mid-turn/i));
+    expect(button).toHaveTextContent(/unavailable while the planner is mid-turn/i);
     await user.click(button);
     expect(closed).toBe(false);
+  });
+});
+
+describe("a write that the API refuses", () => {
+  /*
+    The action zone is the only strip on this screen guaranteed to be on it, so
+    it is where a failed write has to report. Both cases below used to report
+    nowhere: the banner was nested inside the composer branch, and neither of
+    these writes is sent from that branch.
+  */
+  it("says so when applying a plan fails, instead of re-enabling the button in silence", async () => {
+    // The irreversible action. A failure that only re-enables its own control
+    // is indistinguishable from a click that never registered — and the obvious
+    // response to that is to click again, on the one button here where a second
+    // attempt is not free.
+    const user = userEvent.setup();
+    serve(
+      session({
+        expects: "decision",
+        frames: [
+          frame("specs_preview", { specs: [{ id: "T-900", title: "Project switcher" }] }),
+          frame("awaiting", { expects: "decision" }),
+        ],
+      }),
+    );
+    server.use(
+      http.post("*/api/projects/:project/discuss/:id/reply", () =>
+        HttpResponse.json(
+          { detail: "that session is no longer accepting replies" },
+          { status: 409 },
+        ),
+      ),
+    );
+    renderPlanner();
+
+    const apply = await screen.findByRole("button", { name: /apply to the backlog/i });
+    await user.click(apply);
+
+    expect(await screen.findByText(/no longer accepting replies/i)).toBeInTheDocument();
+    // And the decision is still on the table: a refused apply must not read as
+    // an apply that happened.
+    expect(screen.getByRole("button", { name: /apply to the backlog/i })).toBeEnabled();
+  });
+
+  it("says so when Close fails", async () => {
+    const user = userEvent.setup();
+    serve(session({ expects: "answer", frames: [frame("question", { q: "lanes?" })] }));
+    server.use(
+      http.delete("*/api/projects/:project/discuss/:id", () =>
+        HttpResponse.json(
+          { detail: "the planner started a turn — try again when it ends" },
+          { status: 409 },
+        ),
+      ),
+    );
+    renderPlanner();
+
+    await user.click(await screen.findByRole("button", { name: /^close$/i }));
+
+    expect(await screen.findByText(/started a turn/i)).toBeInTheDocument();
   });
 });
 

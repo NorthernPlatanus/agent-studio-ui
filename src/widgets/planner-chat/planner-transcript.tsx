@@ -64,16 +64,19 @@
 
 import {
   AlertTriangleIcon,
+  ArrowDownIcon,
   CheckIcon,
   CircleSlashIcon,
   LightbulbIcon,
   PauseIcon,
 } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { DiscussFrame, DiscussSession } from "@/entities/discuss";
 import { formatClock } from "@/shared/lib/format";
 import { cn } from "@/shared/lib/utils";
+import { Button } from "@/shared/ui/button";
 import { FOCUS_RING } from "@/shared/ui/focus";
+import { Markdown, MarkdownInline } from "@/shared/ui/markdown";
 import { Chip } from "@/shared/ui/status-dot";
 
 /** Frames that are state changes rather than things said. `awaiting` and `closed`
@@ -121,7 +124,7 @@ const WRAP_ANYWHERE = "whitespace-pre-wrap [overflow-wrap:anywhere]";
  * stepping in from it. Full width to the right, because the thing inside it is
  * an 900-character run that wants every pixel of measure it can get.
  */
-const LOG_BLOCK =
+export const LOG_BLOCK =
   "mt-1 block rounded border border-border/60 bg-background/50 px-2 py-1 font-mono text-[11px] leading-relaxed text-muted-foreground";
 
 /**
@@ -172,7 +175,16 @@ function Gutter({
   );
 }
 
-function Line({
+/**
+ * One row of the conversation.
+ *
+ * Exported for `stored-transcript.tsx`, which renders a store written before
+ * frame logs existed. That reading is a different *source* — a flattened
+ * `ROLE: text` blob rather than typed frames — but it is the same conversation
+ * on the same screen, and giving it its own row shapes is how the planner page
+ * ended up with two visual languages for one thing.
+ */
+export function Line({
   label,
   tone,
   ts,
@@ -273,6 +285,14 @@ function FrameRow({ frame }: { frame: DiscussFrame }) {
 
   switch (frame.kind) {
     case "you":
+      // Verbatim, and it is the only row on this screen that is. Everything the
+      // *planner* wrote goes through `Markdown` below; what the operator typed
+      // is shown exactly as they typed it — their line breaks survive (the row
+      // is `pre-wrap`), an asterisk stays an asterisk, and a pasted glob is not
+      // reinterpreted on its way to the screen. Rendering their own input back
+      // to them in a different shape from the box they wrote it in is the one
+      // place where "helpful formatting" reads as the page having changed what
+      // they said.
       return (
         <Line label="You" tone="you" ts={frame.ts} surface mine>
           {String(data.text ?? "")}
@@ -292,7 +312,7 @@ function FrameRow({ frame }: { frame: DiscussFrame }) {
               sentence has two left margins — and where the break falls depends
               on the panel width, which is how the badge appeared to move
               against its own text. */}
-          <span className="mt-1 block text-muted-foreground">{String(data.text ?? "")}</span>
+          <Markdown text={String(data.text ?? "")} className="mt-1 text-muted-foreground" />
         </Line>
       );
 
@@ -308,15 +328,20 @@ function FrameRow({ frame }: { frame: DiscussFrame }) {
         >
           {/* The id is what the composer points `aria-labelledby` at, so the
               action zone announces the question rather than "edit, blank". */}
+          {/* `MarkdownInline`, not `Markdown`: a question is a sentence by
+              construction (`config/prompts/planner.md` asks for one), and the
+              block renderer would wrap it in a `<p>` whose margins this row
+              already provides. It still needs the inline pass — the planner
+              names the field it is asking about, and it names it in backticks. */}
           <span
             id={questionLabelId(frame.seq)}
             className={cn("block font-medium", data.id ? "mt-1" : null)}
           >
-            {String(data.q ?? "")}
+            <MarkdownInline text={String(data.q ?? "")} />
           </span>
           {data.why ? (
             <span className="mt-0.5 block text-[12px] text-muted-foreground">
-              why it matters: {String(data.why)}
+              why it matters: <MarkdownInline text={String(data.why)} />
             </span>
           ) : null}
         </Line>
@@ -325,7 +350,7 @@ function FrameRow({ frame }: { frame: DiscussFrame }) {
     case "note":
       return (
         <Line label="Loop" ts={frame.ts}>
-          <span className="text-muted-foreground">{String(data.text ?? "")}</span>
+          <Markdown text={String(data.text ?? "")} className="text-muted-foreground" />
         </Line>
       );
 
@@ -494,6 +519,13 @@ function Thinking({ progress }: { progress?: DiscussFrame | undefined }) {
   // prose, and folding it into that same truncated mono line (which is what
   // `activity()` does, correctly, for the *spoken* channel) threw away the one
   // thing there is to watch during a nine-minute turn.
+  //
+  // Not put through `Markdown`, unlike every settled planner row. This is a
+  // partial token stream: at any instant it can hold one half of a `**` pair or
+  // an unclosed backtick, so a markdown pass would re-parse it on every frame
+  // and the same sentence would flip in and out of bold as its closing marker
+  // arrived. The row is replaced by a real frame the moment the turn lands, and
+  // that one is rendered properly.
   const prose = data.phase === "text" && data.text ? String(data.text) : null;
   const tool =
     data.phase === "tool"
@@ -596,6 +628,24 @@ export function PlannerTranscript({
   // Whether the operator is at the tail. A ref, not state: it changes on every
   // scroll event and nothing renders from it.
   const following = useRef(true);
+  /*
+    The other half of not-following, and the half that was missing.
+
+    Holding the view still while the operator reads back is right, but on its own
+    it strands them: a planner turn keeps appending, the log keeps growing
+    silently below the fold, and the only ways back to the newest frame are a
+    scrollbar drag or holding End on a region most operators do not know is
+    focusable. Nothing on screen says there is anything down there — so the
+    correct behaviour (do not yank) is indistinguishable from the broken one
+    (the stream died).
+
+    Unlike `following` this one *is* rendered, so it is state. It is deliberately
+    narrower than `!following`: merely having scrolled up is not a reason to put
+    a control on the screen, since the operator can see the tail is where they
+    left it. It turns on only when a frame has actually arrived while they were
+    away, which is exactly the case they cannot otherwise detect.
+  */
+  const [behind, setBehind] = useState(false);
   const count = session.frames.length;
   /** The one proposal that is still on the table. Every earlier one was replaced
    *  by a revision and is a marker row (see `FrameRow`'s `specs_preview`). */
@@ -615,8 +665,24 @@ export function PlannerTranscript({
   // feature-detection the old call needed, since assigning a number always works.
   useEffect(() => {
     void count;
-    if (following.current && box.current) box.current.scrollTop = box.current.scrollHeight;
+    if (following.current) {
+      if (box.current) box.current.scrollTop = box.current.scrollHeight;
+    } else {
+      // A frame landed somewhere the operator cannot see. This is the only
+      // place `behind` is raised — see its declaration for why scrolling up on
+      // its own does not.
+      setBehind(true);
+    }
   }, [count]);
+
+  /** Back to the newest frame, and back into following it. Both, because a
+   *  button that returned the view but left `following` false would go quiet
+   *  again on the very next frame while sitting at the tail. */
+  const jumpToLatest = () => {
+    if (box.current) box.current.scrollTop = box.current.scrollHeight;
+    following.current = true;
+    setBehind(false);
+  };
 
   return (
     // A named `<section>` is implicitly `role="region"`, and the `tabIndex` is
@@ -631,7 +697,13 @@ export function PlannerTranscript({
       tabIndex={0}
       aria-label="Planner conversation"
       onScroll={() => {
-        if (box.current) following.current = atTail(box.current);
+        if (!box.current) return;
+        const tail = atTail(box.current);
+        following.current = tail;
+        // Arriving at the tail by hand answers the question the button asks, so
+        // it withdraws. React bails out of a set that does not change the value,
+        // so this is free on the ordinary scroll where nothing was pending.
+        if (tail) setBehind(false);
       }}
       // No border and no fill. This sits inside a `Panel`, which already draws
       // the frame — a second bordered well inside it made the conversation a box
@@ -683,6 +755,34 @@ export function PlannerTranscript({
         </ul>
         {session.status === "running" ? (
           <Thinking progress={session.frames.findLast((f) => f.kind === "progress")} />
+        ) : null}
+
+        {/*
+          `sticky`, not `absolute`. The scroll container is the `<section>`
+          above, and it is also the element that would have to be
+          `position: relative` for an absolute child to anchor to its *frame* —
+          but a relative scroll container anchors to its scrolled *content*, so
+          the button would sit at the bottom of the log, which is precisely
+          where the operator is not. Sticky resolves against the scrollport by
+          construction and needs nothing from the ancestor.
+
+          The wrapper is `pointer-events-none` with the button opting back in,
+          so this strip does not eat clicks on the last row of the conversation
+          when it is on screen. It has zero height in flow (`h-0`), so raising
+          it never moves a single row.
+        */}
+        {behind ? (
+          <div className="pointer-events-none sticky bottom-2 z-10 flex h-0 justify-center">
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={jumpToLatest}
+              className="pointer-events-auto -translate-y-full shadow-sm"
+            >
+              <ArrowDownIcon aria-hidden="true" />
+              Newer messages
+            </Button>
+          </div>
         ) : null}
       </div>
     </section>

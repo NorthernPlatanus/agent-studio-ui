@@ -94,7 +94,17 @@ export function ComposerShell({
           // Enter sends, shift+enter breaks the line. An answer here is usually
           // one sentence, and reaching for a button after every one is friction
           // in the loop's tightest cycle.
-          if (event.key === "Enter" && !event.shiftKey) {
+          //
+          // `isComposing` is the exception, and it is not a nicety. With an IME
+          // — Japanese, Chinese, Korean, and the compose-key paths some Cyrillic
+          // and Vietnamese layouts use — Enter is how a candidate is *accepted*,
+          // not how a sentence is ended. Without this guard the first Enter of
+          // every multi-byte word sent the half-typed buffer: an unfinished
+          // answer posted to a loop that then spends four hundred thousand
+          // tokens planning against it, with no way to unsend. The key event
+          // still fires during composition, so the flag is the only thing that
+          // tells the two apart.
+          if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
             event.preventDefault();
             onSubmit();
           }

@@ -62,8 +62,13 @@
  * restart costs the turn and not the transcript.
  *
  * A store written before frame logs existed has only the flattened `ROLE: text`
- * blob and no log, so the API hands it back as `state.transcript` with no session.
- * `PersistedTranscript` below is what that gets.
+ * blob and no log, so the API hands it back as `state.transcript` with no
+ * session. That reading gets the same panel, the same rows and the same pinned
+ * composer as a live one — see `StoredTranscript`, which also explains why it is
+ * a conversation rather than the `<pre>` it used to be. It is not a rare corner:
+ * `discussions.frames` is added by a migration that runs on the first store
+ * *write*, and opening this page is a read, so for any project that predates the
+ * column this branch **is** the planner screen until a session is started.
  */
 
 import { useQueryClient } from "@tanstack/react-query";
@@ -82,6 +87,7 @@ import {
 } from "@/entities/discuss";
 import {
   openDiscussStream,
+  useCloseDiscuss,
   useDiscussReply,
   useDiscussSettings,
   useDiscussState,
@@ -114,36 +120,9 @@ import {
   PlannerTranscript,
   questionLabelId,
   SpecArtifacts,
+  StoredTranscript,
   TurnHeartbeat,
 } from "@/widgets/planner-chat";
-
-/**
- * The flattened transcript, for a store written before frame logs existed.
- *
- * The server sends it **only** when it has no session to give: with a frame log
- * present it returns the conversation properly and leaves this empty, so the two
- * can never appear together.
- *
- * Rendered as what it is — plain text — but unfolded and inside the panel, in the
- * same shape as a live conversation: the reading scrolls, the composer is pinned
- * under it. Folding it into a disclosure on an otherwise-empty page put the one
- * thing on screen behind a triangle.
- *
- * It is *not* decoded into frames. The blob is written by `save_discussion` before
- * each planner call and the planner's own turn is appended to `turns` only on an
- * answered question round (`nodes/discuss.py`), so the plan it produced was never
- * in here to recover — a parser would dress up user turns and nested
- * `(resumed session)` wrappers as a conversation that does not exist.
- *
- * TODO: the planner writes markdown; this renders it as plain text.
- */
-function PersistedTranscript({ text }: { text: string }) {
-  return (
-    <pre className="whitespace-pre-wrap px-3 py-3 font-mono text-[11px] leading-relaxed text-muted-foreground">
-      {text}
-    </pre>
-  );
-}
 
 export function PlannerPage() {
   const { project, detail } = useActiveProject();
@@ -157,6 +136,7 @@ export function PlannerPage() {
   const settings = useDiscussSettings(project, sessionId);
   const uploadPin = useUploadPin(project, sessionId);
   const removePin = useRemovePin(project, sessionId);
+  const close = useCloseDiscuss(project, sessionId);
 
   // Lifted out of the composer because the decision has two halves in two
   // places: the buttons and the revise box swap for one another in the action
@@ -244,6 +224,43 @@ export function PlannerPage() {
     session.error !== null &&
     session.frames.some((f) => f.kind === "error" && f.data.text === session.error);
 
+  /*
+    Every write this page makes, reported in the one strip that is always on
+    screen.
+
+    This used to be a banner nested inside the composer branch, which is the
+    branch that needed it least. Two writes had no report at all:
+
+      apply/discard  `reply.mutate("y")` is sent from the *decision* branch,
+                     where there is no composer — so the single irreversible
+                     action on this screen failed by re-enabling its own button
+                     and saying nothing. That reads as "the click did not
+                     register", and the obvious response to it is to click again.
+      close          reported nowhere on the page, in any state.
+
+    Both are mutations whose failures are ordinary rather than exotic: `reply`
+    404s on a session the API has already reaped (the idle TTL is
+    `options.idle_ttl_s`), and `close` 409s on a session that started a turn
+    between the render and the click.
+
+    Newest wins rather than `reply.error ?? close.error`: a mutation holds its
+    error until it is fired again, so a reply that failed an hour ago would
+    otherwise mask the close that just failed. `submittedAt` is when the losing
+    attempt was sent, which is exactly the ordering wanted.
+  */
+  const lastFailure =
+    reply.error !== null && (close.error === null || reply.submittedAt >= close.submittedAt)
+      ? reply.error
+      : close.error;
+  const actionBanner =
+    lastFailure instanceof ApiError ? (
+      <Banner tone="bad">
+        {typeof lastFailure.detail === "string"
+          ? lastFailure.detail
+          : "The planner did not accept that."}
+      </Banner>
+    ) : null;
+
   // "What do you want built?" only on a planner that has never been opened. A
   // stored transcript is a conversation the operator can read on this screen, so
   // the form below it is starting the *next* one.
@@ -318,10 +335,13 @@ export function PlannerPage() {
               title="Planner"
               meta={<StatusChip tone="neutral">Earlier conversation</StatusChip>}
             />
-            <PanelBody scroll flush>
-              <PersistedTranscript text={state.data.transcript} />
+            <PanelBody scroll flush className="px-3 py-0">
+              <StoredTranscript text={state.data.transcript} className="h-full" />
             </PanelBody>
-            <PanelFooter>{startForm}</PanelFooter>
+            {/* The same 40% cap the live branch takes, and for the same reason:
+                the start form is the tallest thing this action zone holds, and
+                the reading above it is the subject of the screen. */}
+            <PanelFooter className="max-h-[40%] overflow-y-auto">{startForm}</PanelFooter>
           </Panel>
         </Screen>
       );
@@ -481,13 +501,28 @@ export function PlannerPage() {
               of this grid is six controls explaining how they would have steered
               a loop that has stopped. */}
           {live ? (
-            <DiscussSettingsPanel
-              settings={session.settings}
-              options={options}
-              disabled={false}
-              pending={settings.isPending}
-              onApply={(next) => settings.mutate(next)}
-            />
+            <>
+              <DiscussSettingsPanel
+                settings={session.settings}
+                options={options}
+                disabled={false}
+                pending={settings.isPending}
+                onApply={(next) => settings.mutate(next)}
+              />
+              {/* Not hoisted to the action zone with the other two. This one is
+                  only reachable from inside the sheet, and the sheet is a
+                  surface the operator closes — a report that lands behind it
+                  would arrive on a screen they are no longer looking at, while
+                  the panel above still shows the draft they thought they had
+                  applied. */}
+              {settings.error instanceof ApiError ? (
+                <Banner tone="bad">
+                  {typeof settings.error.detail === "string"
+                    ? settings.error.detail
+                    : "Those settings were not applied — the next turn runs with what is above."}
+                </Banner>
+              ) : null}
+            </>
           ) : null}
         </div>
       </SheetContent>
@@ -544,21 +579,43 @@ export function PlannerPage() {
                 <SlidersHorizontalIcon aria-hidden="true" />
                 Session
               </Button>
-              {/* Parked with no handler until the server can abort a turn in
-                  flight: `DELETE /discuss/{id}` queues a sentinel only
-                  `Session.read` consumes, so a mid-turn click lands minutes
-                  later as "discard the plan you just produced"
-                  (`docs/FIX_PLAN_DISCUSS_AND_TASK_WRITES.md` §1).
-                  `pointer-events-auto` undoes the base button's
-                  `disabled:pointer-events-none` so the cursor still reports it. */}
+              {/*
+                Live only while the loop is *waiting*, and that split is the
+                whole of it. `DELETE /discuss/{id}` queues a sentinel only
+                `Session.read` consumes (`api/discuss.DiscussManager._tear_down`),
+                so it lands at once on an `awaiting` session — the loop is
+                blocked on that very read — and not until the turn ends on a
+                running one, where it would arrive as "discard the plan you just
+                produced" (`docs/FIX_PLAN_DISCUSS_AND_TASK_WRITES.md` §1).
+
+                It was disabled in *both* states, which over-corrected: the
+                composer offers a way out of every awaiting state except the
+                commonest one — a pending question — so an operator who had
+                changed their mind mid-conversation had no way to end it at all
+                short of restarting the API.
+
+                `pointer-events-auto` undoes the base button's
+                `disabled:pointer-events-none` so the cursor and the tooltip
+                still report the mid-turn case rather than the control being
+                inert and unexplained.
+              */}
               {live ? (
                 <Button
                   size="xs"
                   variant="ghost"
-                  disabled
+                  onClick={() => close.mutate()}
+                  disabled={running || close.isPending}
+                  title={
+                    running
+                      ? "The planner is mid-turn. Closing now would land after it finishes and discard what it produced — wait for the turn to end."
+                      : "End this conversation. The transcript stays on this page."
+                  }
                   className="disabled:pointer-events-auto disabled:cursor-not-allowed"
                 >
                   Close
+                  {running ? (
+                    <span className="sr-only"> — unavailable while the planner is mid-turn</span>
+                  ) : null}
                 </Button>
               ) : null}
             </>
@@ -596,6 +653,7 @@ export function PlannerPage() {
         {live ? (
           deciding && !revising ? (
             <PanelFooter className="space-y-2.5">
+              {actionBanner}
               <Banner tone="warn">
                 Nothing has been written yet. Approving upserts every spec in the proposal above
                 into the store.
@@ -608,7 +666,8 @@ export function PlannerPage() {
               />
             </PanelFooter>
           ) : (
-            <PanelFooter>
+            <PanelFooter className="space-y-2.5">
+              {actionBanner}
               <DiscussComposer
                 expects={waiting}
                 disabled={busy}
@@ -617,13 +676,6 @@ export function PlannerPage() {
                 onSend={(text) => reply.mutate(text)}
                 labelledBy={pending ? questionLabelId(pending.seq) : undefined}
               />
-              {reply.error instanceof ApiError ? (
-                <Banner tone="bad" className="mt-3">
-                  {typeof reply.error.detail === "string"
-                    ? reply.error.detail
-                    : "That reply was not accepted."}
-                </Banner>
-              ) : null}
             </PanelFooter>
           )
         ) : (
