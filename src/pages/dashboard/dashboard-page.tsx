@@ -2,7 +2,7 @@
  * The dashboard.
  *
  * No `<h1>` and no explanatory subtitle — the top bar's location chip says where
- * you are (`DEVDOCS/DESIGN.md` §3.3). The screen opens with the active run,
+ * you are (`devdocs/DESIGN.md` §3.3). The screen opens with the active run,
  * because that is the question the operator came to ask.
  */
 

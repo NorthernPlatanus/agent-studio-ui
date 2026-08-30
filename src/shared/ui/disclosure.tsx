@@ -1,5 +1,5 @@
 /**
- * A Tier-3 region (`DEVDOCS/DESIGN.md` §3.4) that starts folded.
+ * A Tier-3 region (`devdocs/DESIGN.md` §3.4) that starts folded.
  *
  * Exists because a screen can have exactly one subject, and everything else on
  * it has to be visibly subordinate or the subject stops reading as the subject.

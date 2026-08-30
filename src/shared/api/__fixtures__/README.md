@@ -24,4 +24,4 @@ Two notes before you read a value here:
 
 The file-by-file index, the error-code table, and the `null`-not-zero /
 `Candidates.source` / `Events.next_since_rowid` conventions live in
-`DEVDOCS/CONTRACT.md`.
+`devdocs/CONTRACT.md`.

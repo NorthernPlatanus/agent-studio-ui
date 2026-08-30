@@ -1,5 +1,5 @@
 /**
- * Chrome that carries state and location (`DEVDOCS/DESIGN.md` §3.3).
+ * Chrome that carries state and location (`devdocs/DESIGN.md` §3.3).
  *
  * The bar itself has no fill and no bottom border — what you see are floating
  * pill groups, the way the reference groups `← →` into one container and

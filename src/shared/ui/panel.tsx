@@ -1,5 +1,5 @@
 /**
- * Tier 1 of the three surface tiers (`DEVDOCS/DESIGN.md` §3.4): a titled region
+ * Tier 1 of the three surface tiers (`devdocs/DESIGN.md` §3.4): a titled region
  * that owns its own actions.
  *
  * Deliberately **not** shadcn's `Card`: there is no `PanelDescription`. A panel

@@ -1,5 +1,5 @@
 /**
- * The grouped nav outline (`DEVDOCS/DESIGN.md` §3.2), floating on the page
+ * The grouped nav outline (`devdocs/DESIGN.md` §3.2), floating on the page
  * background (§3.3).
  *
  * No fill and no right border: the rail is not a slab, it is a column of

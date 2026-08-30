@@ -1,6 +1,6 @@
 /**
  * The scope selector, pinned to the foot of the nav rail — the reference's
- * account block (`DEVDOCS/DESIGN.md` §3.2). Every read in the app is scoped to
+ * account block (`devdocs/DESIGN.md` §3.2). Every read in the app is scoped to
  * this value, which is exactly why it sits out of the daily tab order but never
  * off screen.
  *

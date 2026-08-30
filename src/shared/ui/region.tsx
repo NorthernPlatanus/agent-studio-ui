@@ -1,5 +1,5 @@
 /**
- * Tier 3 (`DEVDOCS/DESIGN.md` §3.4): a heading and its content, directly on the
+ * Tier 3 (`devdocs/DESIGN.md` §3.4): a heading and its content, directly on the
  * page background. **No card.**
  *
  * This is what tables, timelines and logs use. Wrapping a two-hundred-row table

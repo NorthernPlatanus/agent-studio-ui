@@ -1,7 +1,7 @@
 /**
  * How far a scroll container has moved, as 0→1 over the first `distance` pixels.
  *
- * Used by the chrome to fade its blur in (`DEVDOCS/DESIGN.md` §3.3). Three
+ * Used by the chrome to fade its blur in (`devdocs/DESIGN.md` §3.3). Three
  * details that matter:
  *
  *  - the value is **quantised to 1/24ths** before it reaches React. The raw

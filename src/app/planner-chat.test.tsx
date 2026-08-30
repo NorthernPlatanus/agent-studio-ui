@@ -897,7 +897,7 @@ describe("the Close button", () => {
     (`api/discuss.DiscussManager._tear_down`). That makes the control correct on
     an `awaiting` session — the loop is blocked on exactly that read — and wrong
     on a running one, where the click lands minutes later and discards the plan
-    the turn just produced (`docs/FIX_PLAN_DISCUSS_AND_TASK_WRITES.md` §1).
+    the turn just produced (`devdocs/FIX_PLAN_DISCUSS_AND_TASK_WRITES.md` §1).
   */
   it("ends a session that is waiting on the operator", async () => {
     // The gap this closes: the composer offers a way out of `decision`

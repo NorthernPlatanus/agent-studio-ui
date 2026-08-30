@@ -1,7 +1,7 @@
 /**
  * The context rail — the reference's "Use cases" column, repurposed to the only
  * thing that is genuinely ambient in an orchestrator console: **live activity**
- * (`DEVDOCS/DESIGN.md` §3.1).
+ * (`devdocs/DESIGN.md` §3.1).
  *
  * It is a floating panel, not a bordered third column: no full-height divider,
  * same background as the page, its own rounded surface. It never drives the

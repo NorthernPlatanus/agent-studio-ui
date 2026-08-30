@@ -1,6 +1,6 @@
 /**
  * The task table's filter bar — floating control pills, not a bordered toolbar
- * (`DEVDOCS/DESIGN.md` §3.3).
+ * (`devdocs/DESIGN.md` §3.3).
  *
  * The URL is what the nav rail's pre-filtered children link to, so it has to be
  * a real input to this component rather than a nicety: `/tasks?status=ready`

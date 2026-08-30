@@ -1,5 +1,5 @@
 /**
- * The "not wired up yet" plug (`DEVDOCS/DESIGN.md` §3.8).
+ * The "not wired up yet" plug (`devdocs/DESIGN.md` §3.8).
  *
  * An unbuilt screen still ships its real layout — what is missing is the data
  * source, and saying so precisely is more useful than a grey box that says

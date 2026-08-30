@@ -13,7 +13,7 @@ Usage (from the repo root):
     python3 scripts/capture-fixtures.py --types     # also regenerate generated.ts
 
 The backend repo location can be overridden with ORCH_REPO. Port 8789 is this
-lane's port (see DEVDOCS/START-HERE.md §6) so it never collides with the dev
+lane's port (see devdocs/START-HERE.md §6) so it never collides with the dev
 server (8787) or studio-verify (8788).
 
 This is the only sanctioned capture path: it points the API at a throwaway state
@@ -64,7 +64,7 @@ from tests.api.fixtures.seed_store import (  # noqa: E402
 P = f"/api/projects/{PROJECT}"
 
 # One entry per endpoint in the OpenAPI surface, plus one per error envelope the
-# UI has to render. Keep in sync with DEVDOCS/CONTRACT.md.
+# UI has to render. Keep in sync with devdocs/CONTRACT.md.
 TARGETS: list[tuple[str, str]] = [
     ("healthz", "/healthz"),
     ("projects", "/api/projects"),

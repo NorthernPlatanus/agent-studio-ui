@@ -1,5 +1,5 @@
 /**
- * Tier 2 (`DEVDOCS/DESIGN.md` §3.4): tinted, single-purpose feedback that lives
+ * Tier 2 (`devdocs/DESIGN.md` §3.4): tinted, single-purpose feedback that lives
  * **inside** the panel whose inputs produced it — the reference's blue price
  * strip under the configuration grid.
  *

@@ -2,7 +2,7 @@ import { Chip, type Tone } from "@/shared/ui/status-dot";
 import type { TaskListItem } from "../model/task-types";
 
 /**
- * The attribute chip row (`DEVDOCS/DESIGN.md` §3.6) — the reference's
+ * The attribute chip row (`devdocs/DESIGN.md` §3.6) — the reference's
  * `UDP Support · Unlimited traffic · p0f support` strip, carrying the planner's
  * verdict on a task instead.
  *

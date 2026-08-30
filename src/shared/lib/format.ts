@@ -3,7 +3,7 @@
  *
  * The load-bearing rule lives here: several API fields are `number | null` where
  * `null` means "not reported" and is a different answer from a measured `0`
- * (`cache_hit_rate`, `*_per_completed_task` — see `DEVDOCS/CONTRACT.md` §3).
+ * (`cache_hit_rate`, `*_per_completed_task` — see `devdocs/CONTRACT.md` §3).
  * Every one of those goes through a formatter that returns `DASH` for `null`,
  * so no screen can accidentally render `0%` for "unknown".
  */

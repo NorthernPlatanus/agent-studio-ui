@@ -2,7 +2,7 @@
  * Launch — the one screen that can spend money and mutate git.
  *
  * Structured as the reference's Configuration → Add-ons → Checkout column
- * (`DEVDOCS/DESIGN.md` §3.7), because a spending action should read as a
+ * (`devdocs/DESIGN.md` §3.7), because a spending action should read as a
  * sequence you walk down rather than a dialog you dismiss:
  *
  *   1. **Selection** — which tasks, or none to let the scheduler decide.

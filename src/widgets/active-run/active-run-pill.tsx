@@ -1,6 +1,6 @@
 /**
  * The run pill — the reference's `$15` balance chip, translated
- * (`DEVDOCS/DESIGN.md` §3.3).
+ * (`devdocs/DESIGN.md` §3.3).
  *
  * This is the one fact an operator wants visible on every screen: *is something
  * running, and what has it spent*. It sits in a fixed position in the chrome so

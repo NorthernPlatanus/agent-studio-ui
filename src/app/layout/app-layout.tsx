@@ -1,5 +1,5 @@
 /**
- * The three-zone shell: navigate · work · context (`DEVDOCS/DESIGN.md` §3.1).
+ * The three-zone shell: navigate · work · context (`devdocs/DESIGN.md` §3.1).
  *
  * All three zones sit on the same page background with no dividing hairlines —
  * what separates them is space and the raised surfaces inside them (§3.3).

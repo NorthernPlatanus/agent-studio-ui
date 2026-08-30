@@ -1,5 +1,5 @@
 /**
- * The dense data table (Tier 3 — no card wrapper, `DEVDOCS/DESIGN.md` §3.4).
+ * The dense data table (Tier 3 — no card wrapper, `devdocs/DESIGN.md` §3.4).
  *
  * **Columns are declared, never content-derived.** With `table-auto` the browser
  * measures the widest cell in every column, so the same table re-laid-out with

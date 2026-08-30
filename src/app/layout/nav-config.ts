@@ -1,5 +1,5 @@
 /**
- * The nav rail as a grouped outline (`DEVDOCS/DESIGN.md` §3.2), and the route
+ * The nav rail as a grouped outline (`devdocs/DESIGN.md` §3.2), and the route
  * metadata the top bar reads.
  *
  * The children under Tasks are pre-filtered views, not a submenu: the four

@@ -15,7 +15,7 @@ function renderApp(path = "/") {
 
 /**
  * These assert the *chrome*, not page headings — screens deliberately have no
- * `<h1>` (`DEVDOCS/DESIGN.md` §3.3). Where you are is stated once, by the top
+ * `<h1>` (`devdocs/DESIGN.md` §3.3). Where you are is stated once, by the top
  * bar's location chip, so that is what a navigation test must read.
  */
 describe("app shell", () => {

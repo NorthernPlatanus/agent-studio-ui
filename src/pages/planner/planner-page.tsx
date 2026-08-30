@@ -586,7 +586,7 @@ export function PlannerPage() {
                 so it lands at once on an `awaiting` session — the loop is
                 blocked on that very read — and not until the turn ends on a
                 running one, where it would arrive as "discard the plan you just
-                produced" (`docs/FIX_PLAN_DISCUSS_AND_TASK_WRITES.md` §1).
+                produced" (`devdocs/FIX_PLAN_DISCUSS_AND_TASK_WRITES.md` §1).
 
                 It was disabled in *both* states, which over-corrected: the
                 composer offers a way out of every awaiting state except the

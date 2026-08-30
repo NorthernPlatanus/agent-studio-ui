@@ -1,6 +1,6 @@
 /**
  * Theme, as a **nav-rail row** rather than a header icon button
- * (`DEVDOCS/DESIGN.md` §3.2, from the reference's `Theme  System ⌄` row).
+ * (`devdocs/DESIGN.md` §3.2, from the reference's `Theme  System ⌄` row).
  *
  * A global preference is navigation, not a tool: putting it in the top bar spends
  * the most valuable strip of chrome in the app on something touched twice a year.

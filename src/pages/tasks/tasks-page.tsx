@@ -1,7 +1,7 @@
 /**
  * The task table.
  *
- * A Tier-3 region (`DEVDOCS/DESIGN.md` §3.4): the table sits on the page, not in
+ * A Tier-3 region (`devdocs/DESIGN.md` §3.4): the table sits on the page, not in
  * a rounded card, and its columns are declared rather than content-derived so
  * filtering never shifts the layout under the cursor.
  *

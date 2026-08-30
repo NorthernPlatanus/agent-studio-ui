@@ -1,5 +1,5 @@
 /**
- * The commitment step (`DEVDOCS/DESIGN.md` §3.7).
+ * The commitment step (`devdocs/DESIGN.md` §3.7).
  *
  * Starting a run spawns `python -m orchestrator run …` on the operator's
  * machine: it spends subscription quota and writes to git worktrees. So this is
